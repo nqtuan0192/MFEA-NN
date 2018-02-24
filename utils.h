@@ -311,4 +311,4 @@ namespace std {
 }
 #endif	// MEMORY_SUPPORT
 
-#define DATATYPE		float
+#define DATATYPE		double
