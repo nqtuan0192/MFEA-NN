@@ -22,6 +22,7 @@
 
 void printGPUArray(DATATYPE* ptr, uint32_t size) {
 	cudaDeviceSynchronize();
+	std::cout << "arr size = " << size << ": ";
 	for (uint32_t i = 0; i < size; ++i) {
 		std::cout << ptr[i] << " ";
 	} std::cout << std::endl;
@@ -318,80 +319,112 @@ struct MFEA_Chromosome {
 		ifile.close();
 	}
 
-	std::tuple<uint32_t, uint32_t> decode(DATATYPE* W, uint32_t task, uint32_t layer, cublasHandle_t cublas_handle) {
+	std::tuple<uint32_t, uint32_t> decode(DATATYPE* inp_rnvec, DATATYPE* W, uint32_t task, uint32_t layer, cublasHandle_t cublas_handle) {
 		std::tuple<uint32_t, size_t> tup = getLayerWeightsbyTaskLayer(task, layer);
 		uint32_t offset = std::get<0>(tup);
 		size_t size = std::get<1>(tup);
 		uint32_t nrow = getNumberofUnitsbyTaskLayer(task, layer);
 		uint32_t ncol = getNumberofUnitsbyTaskLayer(task, layer - 1);
 
-		cublas_transposeMatrix<DATATYPE>(nrow, ncol, this->rnvec + offset, W, cublas_handle);
+		cublas_transposeMatrix<DATATYPE>(nrow, ncol, inp_rnvec + offset, W, cublas_handle);
 
 		return std::make_tuple(ncol, nrow);
 	}
 
 	void evalObj(size_t training_size, size_t output_size, DATATYPE* X, DATATYPE* Y,
-						DATATYPE* mat_temp_w, DATATYPE* mat_one, std::array<DATATYPE*, LAYER_SIZE> mat_temp_layer,
+						DATATYPE* mat_temp_rnvec, DATATYPE* mat_temp_w,
+						DATATYPE* mat_one, std::array<DATATYPE*, LAYER_SIZE + 1> mat_temp_layer,
 						cublasHandle_t& cublas_handle, cudnnHandle_t& cudnn_handle,
 						bool is_evalAcc = false, bool is_alltaskeval = false, bool is_reupdateskillfactor = false) {
 		DATATYPE factorial_cost_min = std::numeric_limits<DATATYPE>::max();
 
 		// do weights transformation before evaluating
-		thrust::transform(thrust::device, this->rnvec, this->rnvec + getTotalLayerWeightsandBiases(), mat_temp_w, __functor_weights_transform<float>(-5, 5));
+		
+		thrust::transform(thrust::device, this->rnvec, this->rnvec + getTotalLayerWeightsandBiases(), mat_temp_rnvec, __functor_weights_transform<float>(-5, 5));
+		// printGPUArray(mat_temp_w, getTotalLayerWeightsandBiases());
+
+		mat_temp_layer[0] = X;
 
 		for (uint32_t task = 0; task < TASK_SIZE; ++task) {
 			if ((task == skill_factor) || is_alltaskeval) {
 				uint32_t numberof_layers = getNumberofLayersbyTask(task);
-				for (uint32_t layer = 1; layer < numberof_layers; ++layer) {			
-					auto w_tup = getLayerWeightsbyTaskLayer(task, layer);
+				for (uint32_t layer = 1; layer < numberof_layers; ++layer) {
+					// decode w
+					std::tuple<uint32_t, uint32_t> w_shape = this->decode(mat_temp_rnvec, mat_temp_w, task, layer, cublas_handle);
+					uint32_t w_nrow = std::get<MATRIX_NROW>(w_shape), w_ncol = std::get<MATRIX_NCOL>(w_shape);
+
+					// prepare b
 					auto b_tup = getLayerBiasesbyTaskLayer(task, layer);
-					uint32_t w_off = std::get<OFFSET_IDX>(w_tup), w_size = std::get<SIZE_IDX>(w_tup);
 					uint32_t b_off = std::get<OFFSET_IDX>(b_tup), b_size = std::get<SIZE_IDX>(b_tup);
 
-					// prepare bias matrix from the last row (the last row of the largest matrix)
+					cudaDeviceSynchronize();
+					printMatrix<DATATYPE>(w_nrow, w_ncol, mat_temp_w);
+					printMatrix<DATATYPE>(1, b_size, mat_temp_rnvec + b_off);
+
 					cublas_multiplyMatrices<DATATYPE>(training_size, b_size, 1,
 														mat_one,
-														mat_temp_w + b_off,	// layer index started at 0
-														mat_temp_layer[layer - 1],	// layer index started at 0
+														mat_temp_rnvec + b_off,	// layer index started at 0
+														mat_temp_layer[layer],	// layer index started at 0
 														cublas_handle);
+					cudaDeviceSynchronize();
+					printMatrix<DATATYPE>(training_size, b_size, mat_temp_layer[layer]);
 
 					// multiply add z[i] = z[i-1] * w[i-1] + b[i-1]
-					cublas_multiplyandaddMatrices<DATATYPE>(training_size, getNumberofUnitsbyTaskLayer(task, layer), getNumberofUnitsbyTaskLayer(task, layer - 1),
-															X,
-															mat_temp_w + w_off,
+					cublas_multiplyandaddMatrices<DATATYPE>(training_size, b_size, w_nrow,
 															mat_temp_layer[layer - 1],
+															mat_temp_w,
+															mat_temp_layer[layer],
 															cublas_handle);
+					cudaDeviceSynchronize();
+					printMatrix<DATATYPE>(training_size, b_size, mat_temp_layer[layer]);
 
 					// apply activation function default by sigmoid
-					cuda_sigmoid<DATATYPE>(training_size, getNumberofUnitsbyTaskLayer(task, layer),
-											mat_temp_layer[layer - 1], mat_temp_layer[layer - 1]);
+					cuda_sigmoid<DATATYPE>(training_size, b_size, mat_temp_layer[layer], mat_temp_layer[layer]);
+					cudaDeviceSynchronize();
+					printMatrix<DATATYPE>(training_size, b_size, mat_temp_layer[layer]);
 				}
-				auto w_tup = getLayerWeightsbyTaskLayer(task, numberof_layers);
+
+				// decode w
+				std::tuple<uint32_t, uint32_t> w_shape = this->decode(mat_temp_rnvec, mat_temp_w, task, numberof_layers, cublas_handle);
+				uint32_t w_nrow = std::get<MATRIX_NROW>(w_shape), w_ncol = std::get<MATRIX_NCOL>(w_shape);
+
+				// prepare b
 				auto b_tup = getLayerBiasesbyTaskLayer(task, numberof_layers);
-				uint32_t w_off = std::get<OFFSET_IDX>(w_tup), w_size = std::get<SIZE_IDX>(w_tup);
 				uint32_t b_off = std::get<OFFSET_IDX>(b_tup), b_size = std::get<SIZE_IDX>(b_tup);
 
-				// final layer applies softmax
-				// prepare bias matrix from the last row (the last row of the largest matrix)
-				auto biases = getLayerBiasesbyTaskLayer(task, numberof_layers);
-				cublas_multiplyMatrices<DATATYPE>(training_size, getNumberofUnitsofLastLayerbyTask(task), 1,
+				cudaDeviceSynchronize();
+				printMatrix<DATATYPE>(w_nrow, w_ncol, mat_temp_w);
+				printMatrix<DATATYPE>(1, b_size, mat_temp_rnvec + b_off);
+
+				cublas_multiplyMatrices<DATATYPE>(training_size, b_size, 1,
 													mat_one,
-													mat_temp_w + b_off,
-													mat_temp_layer[numberof_layers - 1],
+													mat_temp_rnvec + b_off,	// layer index started at 0
+													mat_temp_layer[numberof_layers],	// layer index started at 0
 													cublas_handle);
+				cudaDeviceSynchronize();
+				printMatrix<DATATYPE>(training_size, b_size, mat_temp_layer[numberof_layers]);
+
 				// multiply add z[i] = z[i-1] * w[i-1] + b[i-1]
-				cublas_multiplyandaddMatrices<DATATYPE>(training_size, getNumberofUnitsofLastLayerbyTask(task), getNumberofUnitsbyTaskLayer(task, numberof_layers - 1),
-														numberof_layers > 1 ? mat_temp_layer[numberof_layers - 2] : X,
-														mat_temp_w + w_off,
+				cublas_multiplyandaddMatrices<DATATYPE>(training_size, b_size, w_nrow,
 														mat_temp_layer[numberof_layers - 1],
+														mat_temp_w,
+														mat_temp_layer[numberof_layers],
 														cublas_handle);
+				cudaDeviceSynchronize();
+				printMatrix<DATATYPE>(training_size, b_size, mat_temp_layer[numberof_layers]);
+
 				// apply activation function softmax to final layer
-				cuda_sigmoid<DATATYPE>(training_size, getNumberofUnitsofLastLayerbyTask(task),
-										mat_temp_layer[numberof_layers - 1], mat_temp_layer[numberof_layers - 1]);
+				cuda_sigmoid<DATATYPE>(training_size, b_size, mat_temp_layer[numberof_layers], mat_temp_layer[numberof_layers]);
+				cudaDeviceSynchronize();
+				printMatrix<DATATYPE>(training_size, b_size, mat_temp_layer[numberof_layers]);
+
 				
 				// eval cross entropy over the training_size
+				BUG(getNumberofUnitsofLastLayerbyTask(task));
+				printMatrix<DATATYPE>(training_size, getNumberofUnitsofLastLayerbyTask(task), Y);
+				printMatrix<DATATYPE>(training_size, getNumberofUnitsofLastLayerbyTask(task), mat_temp_layer[numberof_layers]);
 				factorial_costs[task] = cuda_evalMSE<DATATYPE>(training_size, getNumberofUnitsofLastLayerbyTask(task),
-																		Y, mat_temp_layer[numberof_layers - 1]);
+																		Y, mat_temp_layer[numberof_layers]);
 				
 				// update skill factor
 				if ((factorial_costs[task] < factorial_cost_min) && is_reupdateskillfactor) {
@@ -400,7 +433,7 @@ struct MFEA_Chromosome {
 				}
 				if (is_evalAcc) {
 					accuracy[task] = cuda_evalAccuracy<DATATYPE>(training_size, getNumberofUnitsofLastLayerbyTask(task),
-															Y, mat_temp_layer[numberof_layers - 1]);
+															Y, mat_temp_layer[numberof_layers]);
 				}
 			} else {
 				factorial_costs[task] = std::numeric_limits<DATATYPE>::max();

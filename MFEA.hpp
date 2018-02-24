@@ -29,6 +29,7 @@ void handle_thread(int _device_id, uint32_t thread_id, std::queue<uint32_t>& dat
 					size_t _training_size,
 					DATATYPE* _working_training_input_data_ptr,
 					DATATYPE* _working_training_output_data_ptr,
+					std::array<DATATYPE*, thread_size>& _dev_mat_temp_rnvec,
 					std::array<DATATYPE*, thread_size>& _dev_mat_temp_w,
 					std::array<DATATYPE*, thread_size>& _dev_mat_ones,
 					std::array<std::array<DATATYPE*, LAYER_SIZE>, thread_size>& _dev_mat_temp_layers) {
@@ -67,6 +68,7 @@ void handle_thread(int _device_id, uint32_t thread_id, std::queue<uint32_t>& dat
 		_population[it].evalObj(_training_size, OUTPUT_SIZE,
 								_working_training_input_data_ptr,
 								_working_training_output_data_ptr,
+								_dev_mat_temp_rnvec,
 								_dev_mat_temp_w,
 								_dev_mat_ones[thread_id],
 								_dev_mat_temp_layers[thread_id],
@@ -108,6 +110,7 @@ private:
 	int _device_id;
 	
 	// feedforward preallocated memory
+	std::array<DATATYPE*, thread_size> dev_mat_temp_rnvec;
 	std::array<DATATYPE*, thread_size> dev_mat_temp_w;
 	std::array<DATATYPE*, thread_size> dev_mat_ones;	// by thread index
 	std::array<std::array<DATATYPE*, LAYER_SIZE>, thread_size> dev_mat_temp_layers;	// by thread index and layer index
@@ -166,6 +169,7 @@ public:
 		
 		/* Initialize temporary space */
 		for (uint32_t i = 0; i < thread_size; ++i) {
+			cudaCALL(CUDA_M_MALLOC_MANAGED(dev_mat_temp_rnvec[i], DATATYPE, getMaximumLayerWeightsandBiasesatAll()));
 			cudaCALL(CUDA_M_MALLOC_MANAGED(dev_mat_temp_w[i], DATATYPE, getMaximumLayerWeightsandBiasesatAll()));
 			// pre-allocate mat_one by TRAINING_SIZE
 			// mat_one is used for populating biases
@@ -235,7 +239,8 @@ public:
 		for (uint32_t i = 0; i < population_size; ++i) {
 			population[i].skill_factor = i % TASK_SIZE;
 			population[i].evalObj(TRAINING_SIZE, OUTPUT_SIZE, training_input_data_ptr, training_output_data_ptr,
-						dev_mat_temp_w[THREAD_IDX_CURRENT], dev_mat_ones[THREAD_IDX_CURRENT], dev_mat_temp_layers[THREAD_IDX_CURRENT],
+						dev_mat_temp_rnvec[THREAD_IDX_CURRENT], dev_mat_temp_w[THREAD_IDX_CURRENT],
+						dev_mat_ones[THREAD_IDX_CURRENT], dev_mat_temp_layers[THREAD_IDX_CURRENT],
 						cublas_handle, cudnn_handle);
 		}
 	}
@@ -292,6 +297,7 @@ public:
 				population[population_size + i].evalObj(TRAINING_SIZE, OUTPUT_SIZE,
 														training_input_data_ptr,
 														training_output_data_ptr,
+														dev_mat_temp_rnvec[THREAD_IDX_CURRENT],
 														dev_mat_temp_w[THREAD_IDX_CURRENT],
 														dev_mat_ones[THREAD_IDX_CURRENT],
 														dev_mat_temp_layers[THREAD_IDX_CURRENT],
@@ -355,7 +361,8 @@ public:
 		
 		for (uint32_t task = 0; task < TASK_SIZE; ++task) {
 			bestInd_data[task].evalObj(TRAINING_SIZE, OUTPUT_SIZE, training_input_data_ptr, training_output_data_ptr,
-							dev_mat_temp_w[THREAD_IDX_CURRENT], dev_mat_ones[THREAD_IDX_CURRENT], dev_mat_temp_layers[THREAD_IDX_CURRENT],
+							dev_mat_temp_rnvec[THREAD_IDX_CURRENT], dev_mat_temp_w[THREAD_IDX_CURRENT],
+							dev_mat_ones[THREAD_IDX_CURRENT], dev_mat_temp_layers[THREAD_IDX_CURRENT],
 							cublas_handle, cudnn_handle, true);
 			std::cout << "-------Best found individuals for task " << task << std::endl;
 			std::cout << bestInd_data[task];
@@ -371,7 +378,8 @@ public:
 			// eval all tasks on training data
 			population[i].evalObj(TRAINING_SIZE, OUTPUT_SIZE,
 							training_input_data_ptr, training_output_data_ptr,
-							dev_mat_temp_w[THREAD_IDX_CURRENT], dev_mat_ones[THREAD_IDX_CURRENT], dev_mat_temp_layers[THREAD_IDX_CURRENT],
+							dev_mat_temp_rnvec[THREAD_IDX_CURRENT], dev_mat_temp_w[THREAD_IDX_CURRENT],
+							dev_mat_ones[THREAD_IDX_CURRENT], dev_mat_temp_layers[THREAD_IDX_CURRENT],
 							cublas_handle, cudnn_handle,
 							true, true, true);
 		}
@@ -426,7 +434,8 @@ public:
 			
 			// re-evaluating for the whole training dataset
 			bestInd_data[task].evalObj(TRAINING_SIZE, OUTPUT_SIZE, training_input_data_ptr, training_output_data_ptr,
-							dev_mat_temp_w[THREAD_IDX_CURRENT], dev_mat_ones[THREAD_IDX_CURRENT], dev_mat_temp_layers[THREAD_IDX_CURRENT],
+							dev_mat_temp_rnvec[THREAD_IDX_CURRENT], dev_mat_temp_w[THREAD_IDX_CURRENT],
+							dev_mat_ones[THREAD_IDX_CURRENT], dev_mat_temp_layers[THREAD_IDX_CURRENT],
 							cublas_handle, cudnn_handle, true);
 			
 			results[task][0][0] = bestInd_data[task].factorial_costs[task];
@@ -436,7 +445,8 @@ public:
 			
 			// evaluating for the whole test dataset
 			bestInd_data[task].evalObj(TESTING_SIZE, OUTPUT_SIZE, testing_input_data_ptr, testing_output_data_ptr,
-							dev_mat_temp_w[THREAD_IDX_CURRENT], dev_mat_ones[THREAD_IDX_CURRENT], dev_mat_temp_layers[THREAD_IDX_CURRENT],
+							dev_mat_temp_rnvec[THREAD_IDX_CURRENT], dev_mat_temp_w[THREAD_IDX_CURRENT],
+							dev_mat_ones[THREAD_IDX_CURRENT], dev_mat_temp_layers[THREAD_IDX_CURRENT],
 							cublas_handle, cudnn_handle, true);
 			
 			results[task][1][0] = bestInd_data[task].factorial_costs[task];
@@ -513,6 +523,7 @@ private:
 							size_t _training_size,
 							DATATYPE* _working_training_input_data_ptr,
 							DATATYPE* _working_training_output_data_ptr,
+							std::array<DATATYPE*, thread_size>& _dev_mat_temp_rnvec,
 							std::array<DATATYPE*, thread_size>& _dev_mat_temp_w,
 							std::array<DATATYPE*, thread_size>& _dev_mat_ones,
 							std::array<std::array<DATATYPE*, LAYER_SIZE>, thread_size>& _dev_mat_temp_layers) {
@@ -528,6 +539,7 @@ private:
 										_training_size,
 										_working_training_input_data_ptr,
 										_working_training_output_data_ptr,
+										std::ref(_dev_mat_temp_rnvec),
 										std::ref(_dev_mat_temp_w),
 										std::ref(_dev_mat_ones),
 										std::ref(_dev_mat_temp_layers));

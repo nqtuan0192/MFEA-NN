@@ -138,15 +138,15 @@ void testDecode() {
 
 	for (uint32_t task = 0; task < TASK_SIZE; ++task) {
 		for (uint32_t layer = 1; layer <= LAYER_SIZE; ++layer) {
-			std::tuple<uint32_t, uint32_t> shape = population[0].decode(W, task, layer, cublas_handle);
+			std::tuple<uint32_t, uint32_t> shape = population[0].decode(population[0].rnvec, W, task, layer, cublas_handle);
 			cudaDeviceSynchronize();
 			std::cout << "W for task " << task << " layer " << layer << " : " << std::endl;
-			printMatrix<DATATYPE>(std::get<0>(shape), std::get<1>(shape), W);
+			printMatrix<DATATYPE>(std::get<MATRIX_NROW>(shape), std::get<MATRIX_NCOL>(shape), W);
 
 
 			std::tuple<uint32_t, uint32_t> bias = getLayerBiasesbyTaskLayer(task, layer);
 			std::cout << "b for task " << task << " layer " << layer << " : " << std::endl;
-			printMatrix<DATATYPE>(1, std::get<1>(bias), population[0].rnvec + std::get<0>(bias));
+			printMatrix<DATATYPE>(1, std::get<SIZE_IDX>(bias), population[0].rnvec + std::get<OFFSET_IDX>(bias));
 		}
 	}
 }
@@ -237,14 +237,17 @@ void testEval() {
 	thrust::for_each(population.begin(), population.end(), MFEA_Chromosome_Randomize(curand_prng));
 
 
+	DATATYPE* dev_mat_temp_rnvec;
 	DATATYPE* dev_mat_temp_w;
 	DATATYPE* dev_mat_ones;
-	std::array<DATATYPE*, LAYER_SIZE> dev_mat_temp_layers;
+	std::array<DATATYPE*, LAYER_SIZE + 1> dev_mat_temp_layers;
+	cudaCALL(CUDA_M_MALLOC_MANAGED(dev_mat_temp_rnvec, DATATYPE, getTotalLayerWeightsandBiases()));
 	cudaCALL(CUDA_M_MALLOC_MANAGED(dev_mat_temp_w, DATATYPE, getTotalLayerWeightsandBiases()));
 	cudaCALL(CUDA_M_MALLOC_MANAGED(dev_mat_ones, DATATYPE, TRAINING_SIZE));
 	cuda_fillMatrix<DATATYPE>(TRAINING_SIZE, 1, dev_mat_ones, 1.0f);
-	for (uint32_t i = 0; i < LAYER_SIZE; ++i) {
-		cudaCALL(CUDA_M_MALLOC_MANAGED(dev_mat_temp_layers[i], DATATYPE, TRAINING_SIZE * getNumberofUnitsbyTaskLayer(TASKINDEX_LARGEST, i + 1)));
+	
+	for (uint32_t i = 0; i < LAYER_SIZE + 1; ++i) {
+		cudaCALL(CUDA_M_MALLOC_MANAGED(dev_mat_temp_layers[i], DATATYPE, TRAINING_SIZE * getNumberofUnitsbyTaskLayer(TASKINDEX_LARGEST, i)));
 	}
 
 
@@ -254,17 +257,22 @@ void testEval() {
 		population[0].rnvec[i] = double(i) / getTotalLayerWeightsandBiases();
 	}
 
+	printGPUArray(dev_mat_ones, TRAINING_SIZE);
 
-	for (uint32_t i = 0; i < 1; ++i) {
+
+	int i = 0;
+	//for (uint32_t i = 0; i < 1; ++i) {
 		population[i].skill_factor = i % TASK_SIZE;
 		population[i].evalObj(TRAINING_SIZE, OUTPUT_SIZE,
 								training_input_data,
 								training_output_data,
+								dev_mat_temp_rnvec,
 								dev_mat_temp_w,
 								dev_mat_ones,
 								dev_mat_temp_layers,
-								cublas_handle, cudnn_handle);
-	}
+								cublas_handle, cudnn_handle,
+								true);
+	//}
 
 	printGPUArray(dev_mat_temp_layers[LAYER_SIZE - 1], TRAINING_SIZE * getNumberofUnitsbyTaskLayer(TASKINDEX_LARGEST, LAYER_SIZE));
 
