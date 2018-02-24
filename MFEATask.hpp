@@ -3,9 +3,10 @@
 
 #include <type_traits>
 
-#define NONE_LAYER 0
+#define NONE_LAYER 	0
 #define OFFSET_IDX	0
 #define SIZE_IDX	1
+
 
 /*
  * layer 0 : input layer, cannot query for weights and biases size

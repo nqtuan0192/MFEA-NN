@@ -18,10 +18,14 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/tuple.h>
 
+#define MATRIX_NROW	0
+#define MATRIX_NCOL	1
+
 #define DOMAIN_MAX_VALUE 1.0
 #define DOMAIN_MIN_VALUE -1.0
 
 template<typename TYPE> void printMatrix(size_t nrow, size_t ncol, TYPE* mat_in) {
+	std::cout << "matrix size = " << nrow << " x " << ncol << ":" << std::endl;
 	for (uint32_t i = 0; i < nrow; ++i) {
 		for (uint32_t j = 0; j < ncol; ++j) {
 			std::cout << mat_in[i * ncol + j] << "\t";
