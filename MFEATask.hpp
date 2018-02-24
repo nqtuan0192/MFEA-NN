@@ -56,44 +56,77 @@ const uint32_t TASK_LAYERSIZES[TASK_SIZE][LAYER_SIZE + 1] = { {INPUT_SIZE, 256, 
  * */
 
 #define TASK_SIZE	3
-#define LAYER_SIZE	3	// number of layers = number of hidden layers + 1
+#define LAYER_SIZE	2	// number of layers = number of hidden layers + 1
 #define TASKINDEX_1		0
 #define TASKINDEX_2		1
 #define TASKINDEX_3		2
 #define TASKINDEX_LARGEST	TASKINDEX_1
 #define TASKINDEX_SMALLEST	TASKINDEX_3
-const uint32_t TASK_NUMBEROF_LAYERS[TASK_SIZE] = {3, 3, 3};
-const uint32_t TASK_LAYERSIZES[TASK_SIZE][LAYER_SIZE + 1] = { {INPUT_SIZE, 3, 3, OUTPUT_SIZE}, // always the largest layer size
-															{INPUT_SIZE, 3, 2, OUTPUT_SIZE}, 
-															{INPUT_SIZE, 2, 2, OUTPUT_SIZE} 
+const uint32_t TASK_NUMBEROF_LAYERS[TASK_SIZE] = {2, 2, 2};
+const uint32_t TASK_LAYERSIZES[TASK_SIZE][LAYER_SIZE + 1] = { {INPUT_SIZE, 7, OUTPUT_SIZE}, // always the largest layer size
+															{INPUT_SIZE, 6, OUTPUT_SIZE}, 
+															{INPUT_SIZE, 5, OUTPUT_SIZE} 
 														  };
 
 
 inline static uint32_t getNumberofLayersbyTask(uint32_t task) {
 	return TASK_NUMBEROF_LAYERS[task];
 }
+
 inline static uint32_t getNumberofUnitsbyTaskLayer(uint32_t task, uint32_t layer) {
 	return TASK_LAYERSIZES[task][layer];
 }
+
 inline static uint32_t getNumberofUnitsofLastLayerbyTask(uint32_t task) {
 	return getNumberofUnitsbyTaskLayer(task, getNumberofLayersbyTask(task));
 }
+
 inline static uint32_t getMaximumLayerWeightsandBiasesbyLayer(uint32_t layer) {
 	assert(layer > 0);
 	return TASK_LAYERSIZES[TASKINDEX_LARGEST][layer] * (TASK_LAYERSIZES[TASKINDEX_LARGEST][layer - 1] + 1);
 }
+
 inline static uint32_t getMaximumLayerWeightsandBiasesatAll() {
 	return TASK_LAYERSIZES[TASKINDEX_LARGEST][1] * (TASK_LAYERSIZES[TASKINDEX_LARGEST][1 - 1] + 1);
 }
-inline static std::tuple<uint32_t, size_t> getLayerWeightsbyTaskLayer(uint32_t task, uint32_t layer) {	// return offset and size
-	return std::make_tuple<uint32_t, size_t>(0, TASK_LAYERSIZES[task][layer] * TASK_LAYERSIZES[task][layer - 1]);
+
+inline static uint32_t getTotalLayerWeightsandBiases() {
+	uint32_t sum = 0;
+	for (uint32_t layer = 1; layer <= LAYER_SIZE; ++layer) {
+		sum += TASK_LAYERSIZES[TASKINDEX_LARGEST][layer] * (TASK_LAYERSIZES[TASKINDEX_LARGEST][layer - 1] + 1);
+	}
+	return sum;
 }
+
+inline static uint32_t getLayerOffset(uint32_t layer) {
+	assert(layer > 0);
+	if (layer <= 1) {
+		return 0;
+	} else {
+		return getLayerOffset(layer - 1) + getMaximumLayerWeightsandBiasesbyLayer(layer - 1);
+	}
+}
+
+inline static uint32_t getBiasOffset(uint32_t layer) {
+	assert(layer > 0);
+	if (layer <= 1) {
+		return TASK_LAYERSIZES[TASKINDEX_LARGEST][1] * (TASK_LAYERSIZES[TASKINDEX_LARGEST][1 - 1]);
+	} else {
+		return getLayerOffset(layer) + TASK_LAYERSIZES[TASKINDEX_LARGEST][layer] * (TASK_LAYERSIZES[TASKINDEX_LARGEST][layer - 1]);
+	}
+}
+
+inline static std::tuple<uint32_t, size_t> getLayerWeightsbyTaskLayer(uint32_t task, uint32_t layer) {	// return offset and size
+	return std::make_tuple<uint32_t, size_t>(getLayerOffset(layer), TASK_LAYERSIZES[task][layer] * TASK_LAYERSIZES[task][layer - 1]);
+}
+
 inline static std::tuple<uint32_t, size_t> getLayerBiasesbyTaskLayer(uint32_t task, uint32_t layer) {	// return offset and size
-	return std::make_tuple<uint32_t, size_t>(TASK_LAYERSIZES[TASKINDEX_LARGEST][layer] * TASK_LAYERSIZES[TASKINDEX_LARGEST][layer - 1],
+	return std::make_tuple<uint32_t, size_t>(getBiasOffset(layer),
 													TASK_LAYERSIZES[task][layer]);
 }
+
 inline static std::tuple<uint32_t, size_t> getLayerWeightsandBiasesbyTaskLayer(uint32_t task, uint32_t layer) {	// return offset and size
-	return std::make_tuple<uint32_t, size_t>(0, TASK_LAYERSIZES[task][layer] * (TASK_LAYERSIZES[task][layer - 1] + 1));
+	return std::make_tuple<uint32_t, size_t>(getLayerOffset(layer), TASK_LAYERSIZES[task][layer] * (TASK_LAYERSIZES[task][layer - 1] + 1));
 }
 
 

@@ -115,6 +115,7 @@ private:
 	
 	// crossover and mutation preallocated memory
 	std::array<DATATYPE*, thread_size> dev_ct_beta;	// by thread index
+	std::array<DATATYPE*, thread_size> dev_rand;	// by thread index
 
 	const uint32_t THREAD_IDX_CURRENT = 0;
 	
@@ -181,6 +182,7 @@ public:
 			// dev_ct_beta is used for genetic operators
 			// layer 1 (first hidden layer) should be largest number of neurons
 			cudaCALL(CUDA_M_MALLOC_MANAGED(dev_ct_beta[i], DATATYPE, getMaximumLayerWeightsandBiasesatAll()));
+			cudaCALL(CUDA_M_MALLOC_MANAGED(dev_rand[i], DATATYPE, getMaximumLayerWeightsandBiasesatAll()));
 		}
 		
 		cudaStream_t cublas_stream, cudnn_stream;
@@ -257,8 +259,8 @@ public:
 					crossover(population[i], population[population_size / 2 + i], population[population_size + count], population[population_size + count + 1], cf_distributionindex, dev_ct_beta[THREAD_IDX_CURRENT], curand_prng);
 
 					
-					mutate(population[population_size + count], population[population_size + count], mf_polynomialmutationindex, mf_mutationratio, dev_ct_beta[THREAD_IDX_CURRENT], curand_prng);
-					mutate(population[population_size + count + 1], population[population_size + count + 1], mf_polynomialmutationindex, mf_mutationratio, dev_ct_beta[THREAD_IDX_CURRENT], curand_prng);
+					mutate(population[population_size + count], population[population_size + count], mf_polynomialmutationindex, mf_mutationratio, dev_ct_beta[THREAD_IDX_CURRENT], dev_rand[THREAD_IDX_CURRENT], curand_prng);
+					mutate(population[population_size + count + 1], population[population_size + count + 1], mf_polynomialmutationindex, mf_mutationratio, dev_ct_beta[THREAD_IDX_CURRENT], dev_rand[THREAD_IDX_CURRENT], curand_prng);
 					
 					// probabilistic assign the skill factor for children from their parents 
 					if (rand() <= 0.5) {
