@@ -162,7 +162,7 @@ template<> void cublas_multiplyandaddMatrices<double>(size_t nrow, size_t ncol, 
 	double beta = 1.0;
 	cublasCALL(cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, ncol, nrow, commonsize, &alpha, mat_b, ncol, mat_a, commonsize, &beta, mat_out, ncol));
 }
-#include <cublas_v2.h>
+
 template<typename TYPE> void cublas_addMatrices(size_t nrow, size_t ncol, TYPE* mat_a, TYPE* mat_b, TYPE* mat_out, cublasHandle_t& handle) {
 	std::cerr << "Error! Only support float or double." << std::endl;
 }
@@ -391,22 +391,22 @@ template<typename TYPE> void cuda_tanh(size_t nrow, size_t ncol, TYPE* mat_in, T
 						__functor_relu<TYPE>());
 }
 
-float const FLT_MIN = std::numeric_limits<float>::min();
-double const DBL_MIN = std::numeric_limits<double>::min();
+float const _FLT_MIN = std::numeric_limits<float>::min();
+double const _DBL_MIN = std::numeric_limits<double>::min();
 template<typename TYPE> struct __functor_eliminatezero {
 	__host__ __device__ TYPE operator()(const TYPE& x) {
 		// by default return float
-		return x != 0 ? x : FLT_MIN;
+		return x != 0 ? x : _FLT_MIN;
 	}
 };
 template<> struct __functor_eliminatezero<float> {
 	__host__ __device__ float operator()(const float& x) {
-		return x != 0 ? x : FLT_MIN;
+		return x != 0 ? x : _FLT_MIN;
 	}
 };
 template<> struct __functor_eliminatezero<double> {
 	__host__ __device__ double operator()(const double& x) {
-		return x != 0 ? x : DBL_MIN;
+		return x != 0 ? x : _DBL_MIN;
 	}
 };
 // in out pointer COULD be same
