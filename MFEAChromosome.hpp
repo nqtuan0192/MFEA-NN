@@ -318,8 +318,16 @@ struct MFEA_Chromosome {
 		ifile.close();
 	}
 
-	void decode(DATATYPE* W, uint32_t offset, size_t nrow, size_t ncol, cublasHandle_t cublas_handle) {
+	std::tuple<uint32_t, uint32_t> decode(DATATYPE* W, uint32_t task, uint32_t layer, cublasHandle_t cublas_handle) {
+		std::tuple<uint32_t, size_t> tup = getLayerWeightsbyTaskLayer(task, layer);
+		uint32_t offset = std::get<0>(tup);
+		size_t size = std::get<1>(tup);
+		uint32_t nrow = getNumberofUnitsbyTaskLayer(task, layer);
+		uint32_t ncol = getNumberofUnitsbyTaskLayer(task, layer - 1);
+
 		cublas_transposeMatrix<DATATYPE>(nrow, ncol, this->rnvec + offset, W, cublas_handle);
+
+		return std::make_tuple(ncol, nrow);
 	}
 
 	void evalObj(size_t training_size, size_t output_size, DATATYPE* X, DATATYPE* Y,

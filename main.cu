@@ -60,6 +60,7 @@ void showMUltitasksSetting() {
 	}
 }
 
+void testDecode();
 void testSBX();
 void testPMU();
 void testEval();
@@ -91,31 +92,9 @@ int main(int argc, char** argv) {
 	/* load input data */
 	loadDataFile<DATATYPE>(training_input_data, training_output_data, testing_input_data, testing_output_data);
 
-	std::array<MFEA_Chromosome, 4> population;
-	thrust::for_each(population.begin(), population.end(), MFEA_Chromosome_Randomize(curand_prng));
-
-	cudaDeviceSynchronize();
-	std::cout << population[0];
 
 
-	for (uint32_t i = 0; i < 8 * 8; ++i) {
-		population[0].rnvec[i] = i;
-	}
-	printMatrix<DATATYPE>(8, 8, population[0].rnvec);
-	//cublas_transposeMatrix<DATATYPE>(6, 8, population[0].rnvec, population[1].rnvec, cublas_handle);
-
-	DATATYPE* W;
-	CUDA_M_MALLOC_MANAGED(W, DATATYPE, getTotalLayerWeightsandBiases());
-
-
-	std::tuple<uint32_t, size_t> a = getLayerWeightsbyTaskLayer(0, 1);
-	uint32_t offset = std::get<0>(a);
-	size_t size = std::get<1>(a);
-	population[0].decode(W, offset, 5, 8, cublas_handle);
-
-	cudaDeviceSynchronize();
-	printMatrix<DATATYPE>(8, 5, W);
-
+	testEval();
 
 	
 	
@@ -126,6 +105,50 @@ int main(int argc, char** argv) {
     cudaDeviceReset();
     
 	return 0;
+}
+
+void testDecode() {
+	cublasHandle_t cublas_handle;
+	cublasCALL(cublasCreate(&cublas_handle));
+	
+	cudnnHandle_t cudnn_handle;
+	cudnnCALL(cudnnCreate(&cudnn_handle));
+
+	curandGenerator_t curand_prng;
+	// Create a pseudo-random number generator
+	curandCreateGenerator(&curand_prng, CURAND_RNG_PSEUDO_MTGP32);
+	// Set the seed for the random number generator using the system clock
+	curandSetPseudoRandomGeneratorSeed(curand_prng, 0);
+
+	std::array<MFEA_Chromosome, 4> population;
+	thrust::for_each(population.begin(), population.end(), MFEA_Chromosome_Randomize(curand_prng));
+
+	cudaDeviceSynchronize();
+	std::cout << population[0];
+
+
+	for (uint32_t i = 0; i < getTotalLayerWeightsandBiases(); ++i) {
+		population[0].rnvec[i] = i;
+	}
+	printMatrix<DATATYPE>(8, 8, population[0].rnvec);
+	//cublas_transposeMatrix<DATATYPE>(6, 8, population[0].rnvec, population[1].rnvec, cublas_handle);
+
+	DATATYPE* W;
+	CUDA_M_MALLOC_MANAGED(W, DATATYPE, getTotalLayerWeightsandBiases());
+
+	for (uint32_t task = 0; task < TASK_SIZE; ++task) {
+		for (uint32_t layer = 1; layer <= LAYER_SIZE; ++layer) {
+			std::tuple<uint32_t, uint32_t> shape = population[0].decode(W, task, layer, cublas_handle);
+			cudaDeviceSynchronize();
+			std::cout << "W for task " << task << " layer " << layer << " : " << std::endl;
+			printMatrix<DATATYPE>(std::get<0>(shape), std::get<1>(shape), W);
+
+
+			std::tuple<uint32_t, uint32_t> bias = getLayerBiasesbyTaskLayer(task, layer);
+			std::cout << "b for task " << task << " layer " << layer << " : " << std::endl;
+			printMatrix<DATATYPE>(1, std::get<1>(bias), population[0].rnvec + std::get<0>(bias));
+		}
+	}
 }
 
 void testSBX() {
