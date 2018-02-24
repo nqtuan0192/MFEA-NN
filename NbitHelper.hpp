@@ -10,8 +10,8 @@
 
 #include "utils.h"
 
-#define TRAINING_DATA_FILE "dataset/nbit/training_input"
-#define TESTING_DATA_FILE "dataset/nbit/training_output"
+#define TRAINING_INPUT_DATA_FILE "dataset/nbit/training_input"
+#define TRAINING_OUTPUT_DATA_FILE "dataset/nbit/training_output"
 
 #define INPUT_SIZE		8
 #define OUTPUT_SIZE		1
@@ -60,7 +60,7 @@ template<typename TYPE> void doRandomShuffle(TYPE* input_data_ptr, TYPE* output_
 	cudaCALL(cudaFree(temp_ptr));
 }
 
-
+/*
 template<typename TYPE> void loadDataFile(TYPE*& training_input_data_ptr, TYPE*& training_output_data_ptr,
 											TYPE*& testing_input_data_ptr, TYPE*& testing_output_data_ptr) {
 	// allocate memory
@@ -72,12 +72,12 @@ template<typename TYPE> void loadDataFile(TYPE*& training_input_data_ptr, TYPE*&
 	for (uint32_t i = 0; i < DATA_SIZE; ++i) {
 		for (uint32_t j = 0; j < INPUT_SIZE; ++j) {
 			data_input[i * INPUT_SIZE + j] = (i >> j) & 0x1;
-			std::cout << data_input[i * INPUT_SIZE + j] << ", ";
-		}std::cout << std::endl;
-		fprintTruebitOrder(stdout, &i, 1);
-		std::cout << std::endl;
+			//std::cout << data_input[i * INPUT_SIZE + j] << ", ";
+		}//std::cout << std::endl;
+		//fprintTruebitOrder(stdout, &i, 1);
+		//std::cout << std::endl;
 		data_output[i * OUTPUT_SIZE] = numberOfSetBits(i) % 2;
-		BUG(data_output[i * OUTPUT_SIZE]);
+		//BUG(data_output[i * OUTPUT_SIZE]);
 	}
 	
 	// random shuffle
@@ -107,9 +107,9 @@ template<typename TYPE> void loadDataFile(TYPE*& training_input_data_ptr, TYPE*&
 		ofile << std::endl;
 	}
 	ofile.close();
-}
+}*/
 
-/*
+
 template<typename TYPE, size_t nrow, size_t ncol> void readMatrixFromFile(std::string file_name, TYPE* data_ptr) {
 	std::ifstream ifile(file_name);
 	#pragma unroll
@@ -130,8 +130,8 @@ template<typename TYPE> void loadDataFile(TYPE*& training_input_data_ptr, TYPE*&
 	cudaCALL(CUDA_M_MALLOC_MANAGED(data_input, TYPE, TRAINING_SIZE * INPUT_SIZE));
 	cudaCALL(CUDA_M_MALLOC_MANAGED(data_output, TYPE, TRAINING_SIZE * OUTPUT_SIZE));
 	
-	readMatrixFromFile<TYPE, TRAINING_SIZE, INPUT_SIZE>(TRAINING_DATA_FILE, data_input);
-	readMatrixFromFile<TYPE, TRAINING_SIZE, OUTPUT_SIZE>(TRAINING_DATA_FILE, data_output);
+	readMatrixFromFile<TYPE, TRAINING_SIZE, INPUT_SIZE>(TRAINING_INPUT_DATA_FILE, data_input);
+	readMatrixFromFile<TYPE, TRAINING_SIZE, OUTPUT_SIZE>(TRAINING_OUTPUT_DATA_FILE, data_output);
 	
 	// asign return pointers
 	training_input_data_ptr = data_input;
@@ -140,5 +140,5 @@ template<typename TYPE> void loadDataFile(TYPE*& training_input_data_ptr, TYPE*&
 	training_output_data_ptr = data_output;
 	testing_output_data_ptr = data_output;//data_output + TRAINING_SIZE * OUTPUT_SIZE;
 }
-*/
+
 #endif	// MNIST_HELPER_H
