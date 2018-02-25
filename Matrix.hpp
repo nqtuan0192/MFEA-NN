@@ -205,6 +205,12 @@ template<> void cublas_copyMatrix<double>(size_t nrow, size_t ncol, double* mat_
 	cublasCALL(cublasDcopy(handle, nrow * ncol, mat_in, 1, mat_out, 1));
 }
 
+// Copy matrix mat_in with shape = in_nrow x in_ncol from starting point at in_srow, in_scol to matrix mat_out with shape out_nrow x out_nrow
+// inplace possible
+template<typename TYPE> void cuda_copySubMatrix(uint32_t in_srow, uint32_t in_scol, TYPE* mat_in, uint32_t in_nrow, uint32_t in_ncol, TYPE* mat_out, uint32_t out_nrow, uint32_t out_ncol) {
+	cudaMemcpy2D(mat_out, out_ncol * sizeof(TYPE), mat_in + in_scol + in_srow * in_ncol, in_ncol * sizeof(TYPE), out_ncol * sizeof(TYPE), out_nrow, cudaMemcpyDeviceToDevice);
+}
+
 // in out pointers could NOT be same
 template<typename TYPE> void addColumn(size_t nrow, size_t ncol, TYPE* mat_in, TYPE* mat_out, TYPE value) {
 	//#pragma unroll
