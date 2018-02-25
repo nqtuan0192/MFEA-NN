@@ -323,10 +323,16 @@ struct MFEA_Chromosome {
 		std::tuple<uint32_t, size_t> tup = getLayerWeightsbyTaskLayer(task, layer);
 		uint32_t offset = std::get<0>(tup);
 		size_t size = std::get<1>(tup);
+
+		uint32_t unrow = getMaximumNumberofUnitsofUnifiedLayer(layer);
+		uint32_t uncol = getMaximumNumberofUnitsofUnifiedLayer(layer - 1);
+
+		cublas_transposeMatrix<DATATYPE>(unrow, uncol, inp_rnvec + offset, W, cublas_handle);
+
 		uint32_t nrow = getNumberofUnitsbyTaskLayer(task, layer);
 		uint32_t ncol = getNumberofUnitsbyTaskLayer(task, layer - 1);
 
-		cublas_transposeMatrix<DATATYPE>(nrow, ncol, inp_rnvec + offset, W, cublas_handle);
+		cuda_copySubMatrix(0, 0, W, uncol, unrow, W, ncol, nrow);
 
 		return std::make_tuple(ncol, nrow);
 	}
