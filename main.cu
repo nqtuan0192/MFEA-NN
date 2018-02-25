@@ -94,7 +94,7 @@ int main(int argc, char** argv) {
 
 
 
-	testEval();
+	testDecode();
 
 	
 	
@@ -130,14 +130,14 @@ void testDecode() {
 	for (uint32_t i = 0; i < getTotalLayerWeightsandBiases(); ++i) {
 		population[0].rnvec[i] = i;
 	}
-	printMatrix<DATATYPE>(8, 8, population[0].rnvec);
+	printMatrix<DATATYPE>(1, getTotalLayerWeightsandBiases(), population[0].rnvec);
 	//cublas_transposeMatrix<DATATYPE>(6, 8, population[0].rnvec, population[1].rnvec, cublas_handle);
 
 	DATATYPE* W;
 	CUDA_M_MALLOC_MANAGED(W, DATATYPE, getTotalLayerWeightsandBiases());
 
 	for (uint32_t task = 0; task < TASK_SIZE; ++task) {
-		for (uint32_t layer = 1; layer <= LAYER_SIZE; ++layer) {
+		for (uint32_t layer = 1; layer <= getNumberofLayersbyTask(task); ++layer) {
 			std::tuple<uint32_t, uint32_t> shape = population[0].decode(population[0].rnvec, W, task, layer, cublas_handle);
 			cudaDeviceSynchronize();
 			std::cout << "W for task " << task << " layer " << layer << " : " << std::endl;

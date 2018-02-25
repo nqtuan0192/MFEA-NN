@@ -2,6 +2,11 @@
 #define MFEA_TASK_HPP
 
 #include <type_traits>
+#include <cassert>
+#include <algorithm>
+
+#define INPUT_SIZE	8
+#define OUTPUT_SIZE	1
 
 #define NONE_LAYER 	0
 #define OFFSET_IDX	0
@@ -51,29 +56,36 @@ const uint32_t TASK_LAYERSIZES[TASK_SIZE][LAYER_SIZE + 1] = { {INPUT_SIZE, 256, 
 */
 
 
-/* good tasks
- * 3 tasks: 64-32, 64, 0
- * 3 tasks: 64-32-16, 64-32, 64
- * */
 
 #define TASK_SIZE	3
-#define LAYER_SIZE	2	// number of layers = number of hidden layers + 1
+#define LAYER_SIZE	4	// number of layers = number of hidden layers + 1
 #define TASKINDEX_1		0
 #define TASKINDEX_2		1
 #define TASKINDEX_3		2
 #define TASKINDEX_LARGEST	TASKINDEX_1
 #define TASKINDEX_SMALLEST	TASKINDEX_3
-const uint32_t TASK_NUMBEROF_LAYERS[TASK_SIZE] = {2, 2, 2};
-const uint32_t TASK_LAYERSIZES[TASK_SIZE][LAYER_SIZE + 1] = { {INPUT_SIZE, 7, OUTPUT_SIZE}, // always the largest layer size
-															{INPUT_SIZE, 6, OUTPUT_SIZE}, 
-															{INPUT_SIZE, 5, OUTPUT_SIZE} 
-														  };
+const uint32_t TASK_NUMBEROF_LAYERS[TASK_SIZE] = {3, 4, 3};
+const uint32_t TASK_LAYERSIZES[TASK_SIZE][LAYER_SIZE + 1] =
+						{ {INPUT_SIZE, 3, 3, OUTPUT_SIZE, NONE_LAYER},
+						  {INPUT_SIZE, 3, 2, 2, OUTPUT_SIZE}, 
+						  {INPUT_SIZE, 3, 4, OUTPUT_SIZE, NONE_LAYER}
+						};
 
 
+/** Return the number of layers for corresponding task
+ */
 inline static uint32_t getNumberofLayersbyTask(uint32_t task) {
 	return TASK_NUMBEROF_LAYERS[task];
 }
 
+/** Return the number of layers for the unified task
+ */
+inline static uint32_t getUnifiedNumberofLayers() {
+	return *std::max_element(std::begin(TASK_NUMBEROF_LAYERS), std::end(TASK_NUMBEROF_LAYERS));
+}
+
+/** Return the number of units for each layer of corresponding task
+ */
 inline static uint32_t getNumberofUnitsbyTaskLayer(uint32_t task, uint32_t layer) {
 	return TASK_LAYERSIZES[task][layer];
 }
@@ -82,80 +94,103 @@ inline static uint32_t getNumberofUnitsofLastLayerbyTask(uint32_t task) {
 	return getNumberofUnitsbyTaskLayer(task, getNumberofLayersbyTask(task));
 }
 
+inline static uint32_t getNumberofUnitsofLastHiddenLayerbyTask(uint32_t task) {
+	return getNumberofUnitsbyTaskLayer(task, getNumberofLayersbyTask(task) - 1);
+}
+
+inline static uint32_t getMaximumNumberofUnitsofUnifiedLayer(uint32_t layer) {
+	uint32_t nunits = 0;
+	if (layer == LAYER_SIZE - 1) {
+		for (uint32_t task = 0; task < TASK_SIZE; ++task) {
+			if (getNumberofUnitsofLastHiddenLayerbyTask(task) > nunits) {
+				nunits = getNumberofUnitsofLastHiddenLayerbyTask(task);
+			}
+		}
+	} else {
+		for (uint32_t task = 0; task < TASK_SIZE; ++task) {
+			if (getNumberofUnitsbyTaskLayer(task, layer) > nunits) {
+				nunits = getNumberofUnitsbyTaskLayer(task, layer);
+			}
+		}
+	}
+	return nunits;
+}
+
 inline static uint32_t getMaximumLayerWeightsandBiasesbyLayer(uint32_t layer) {
 	assert(layer > 0);
-	return TASK_LAYERSIZES[TASKINDEX_LARGEST][layer] * (TASK_LAYERSIZES[TASKINDEX_LARGEST][layer - 1] + 1);
+	return getMaximumNumberofUnitsofUnifiedLayer(layer) * (getMaximumNumberofUnitsofUnifiedLayer(layer - 1) + 1);
 }
 
 inline static uint32_t getMaximumLayerWeightsandBiasesatAll() {
-	return TASK_LAYERSIZES[TASKINDEX_LARGEST][1] * (TASK_LAYERSIZES[TASKINDEX_LARGEST][1 - 1] + 1);
+	uint32_t n = 0;
+	for (uint32_t layer = 1; layer <= LAYER_SIZE; ++layer) {
+		if (n < getMaximumNumberofUnitsofUnifiedLayer(layer) * (getMaximumNumberofUnitsofUnifiedLayer(layer - 1) + 1)) {
+			n = getMaximumNumberofUnitsofUnifiedLayer(layer) * (getMaximumNumberofUnitsofUnifiedLayer(layer - 1) + 1);
+		}
+	}
+	return n;
 }
 
 inline static uint32_t getTotalLayerWeightsandBiases() {
 	uint32_t sum = 0;
 	for (uint32_t layer = 1; layer <= LAYER_SIZE; ++layer) {
-		sum += TASK_LAYERSIZES[TASKINDEX_LARGEST][layer] * (TASK_LAYERSIZES[TASKINDEX_LARGEST][layer - 1] + 1);
+		sum += getMaximumNumberofUnitsofUnifiedLayer(layer) * (getMaximumNumberofUnitsofUnifiedLayer(layer - 1) + 1);
 	}
 	return sum;
 }
 
-inline static uint32_t getLayerOffset(uint32_t layer) {
+
+
+inline static uint32_t getUnifiedLayerOffset(uint32_t layer) {
 	assert(layer > 0);
 	if (layer <= 1) {
 		return 0;
 	} else {
-		return getLayerOffset(layer - 1) + getMaximumLayerWeightsandBiasesbyLayer(layer - 1);
+		return getUnifiedLayerOffset(layer - 1) + getMaximumLayerWeightsandBiasesbyLayer(layer - 1);
 	}
 }
 
-inline static uint32_t getBiasOffset(uint32_t layer) {
+inline static uint32_t getUnifiedBiasOffset(uint32_t layer) {
 	assert(layer > 0);
-	if (layer <= 1) {
-		return TASK_LAYERSIZES[TASKINDEX_LARGEST][1] * (TASK_LAYERSIZES[TASKINDEX_LARGEST][1 - 1]);
+	if (layer < 1) {
+		return getMaximumNumberofUnitsofUnifiedLayer(1) * getMaximumNumberofUnitsofUnifiedLayer(1 - 1);
 	} else {
-		return getLayerOffset(layer) + TASK_LAYERSIZES[TASKINDEX_LARGEST][layer] * (TASK_LAYERSIZES[TASKINDEX_LARGEST][layer - 1]);
+		return getUnifiedLayerOffset(layer) + getMaximumNumberofUnitsofUnifiedLayer(layer) * getMaximumNumberofUnitsofUnifiedLayer(layer - 1);
+	}
+}
+
+inline static uint32_t getLayerOffset(uint32_t task, uint32_t layer) {
+	assert(layer <= getNumberofLayersbyTask(task));
+	if ((getNumberofLayersbyTask(task) < getUnifiedNumberofLayers()) && (getNumberofLayersbyTask(task) == layer)) {
+		// if this task has less number of layers than unified topo and layer is the last layer of this task
+		// then return the last unified layer
+		return getUnifiedLayerOffset(getUnifiedNumberofLayers());
+	} else {
+		return getUnifiedLayerOffset(layer);
+	}
+}
+
+inline static uint32_t getBiasOffset(uint32_t task, uint32_t layer) {
+	assert(layer <= getNumberofLayersbyTask(task));
+	if ((getNumberofLayersbyTask(task) < getUnifiedNumberofLayers()) && (getNumberofLayersbyTask(task) == layer)) {
+		// if this task has less number of layers than unified topo and layer is the last layer of this task
+		// then return the last unified layer
+		return getUnifiedBiasOffset(getUnifiedNumberofLayers());
+	} else {
+		return getUnifiedBiasOffset(layer);
 	}
 }
 
 inline static std::tuple<uint32_t, size_t> getLayerWeightsbyTaskLayer(uint32_t task, uint32_t layer) {	// return offset and size
-	return std::make_tuple<uint32_t, size_t>(getLayerOffset(layer), TASK_LAYERSIZES[task][layer] * TASK_LAYERSIZES[task][layer - 1]);
+	return std::make_tuple<uint32_t, size_t>(getLayerOffset(task, layer), getNumberofUnitsbyTaskLayer(task, layer) * getNumberofUnitsbyTaskLayer(task, layer - 1));
 }
 
 inline static std::tuple<uint32_t, size_t> getLayerBiasesbyTaskLayer(uint32_t task, uint32_t layer) {	// return offset and size
-	return std::make_tuple<uint32_t, size_t>(getBiasOffset(layer),
-													TASK_LAYERSIZES[task][layer]);
+	return std::make_tuple<uint32_t, size_t>(getBiasOffset(task, layer), getNumberofUnitsbyTaskLayer(task, layer));
 }
 
 inline static std::tuple<uint32_t, size_t> getLayerWeightsandBiasesbyTaskLayer(uint32_t task, uint32_t layer) {	// return offset and size
-	return std::make_tuple<uint32_t, size_t>(getLayerOffset(layer), TASK_LAYERSIZES[task][layer] * (TASK_LAYERSIZES[task][layer - 1] + 1));
+	return std::make_tuple<uint32_t, size_t>(getLayerOffset(task, layer), getNumberofUnitsbyTaskLayer(task, layer) * (getNumberofUnitsbyTaskLayer(task, layer - 1) + 1));
 }
 
-
-
-
-
-
-
-/*
- * template concept
-// define neural network size for each task
-#define TASK_0 
-#define TASK_1 char[200]
-#define TASK_2 char[200], char[50]
-#define TASK_3 char[200], char[50], char[10]
-
-template<class... hiddenlayers> struct MFEA_Task {
-	static constexpr uint32_t numberof_layers = sizeof...(hiddenlayers);
-	static constexpr uint32_t layers[sizeof...(hiddenlayers)] = {sizeof(hiddenlayers)...};
-	
-    MFEA_Task() = delete;
-    MFEA_Task(const MFEA_Task&) = delete;
-    MFEA_Task(MFEA_Task&&) = delete;
-};
-
-#define MFEA_Task<TASK_0> MFEA_Task_NONE_HIDDENLAYER
-#define MFEA_Task<TASK_1> MFEA_Task_ONE_HIDDENLAYER
-#define MFEA_Task<TASK_2> MFEA_Task_TWO_HIDDENLAYERs
-#define MFEA_Task<TASK_3> MFEA_Task_THREE_HIDDENLAYERs
-*/
 #endif	// MFEA_TASK_HPP
