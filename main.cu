@@ -94,7 +94,7 @@ int main(int argc, char** argv) {
 
 
 
-	testDecode();
+	testEval();
 
 	
 	
@@ -237,6 +237,7 @@ void testEval() {
 	thrust::for_each(population.begin(), population.end(), MFEA_Chromosome_Randomize(curand_prng));
 
 
+
 	DATATYPE* dev_mat_temp_rnvec;
 	DATATYPE* dev_mat_temp_w;
 	DATATYPE* dev_mat_ones;
@@ -258,6 +259,7 @@ void testEval() {
 	}
 
 	printGPUArray(dev_mat_ones, TRAINING_SIZE);
+	printGPUArray(dev_mat_temp_rnvec, getTotalLayerWeightsandBiases());
 
 
 	int i = 0;
