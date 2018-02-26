@@ -328,6 +328,9 @@ struct MFEA_Chromosome {
 		uint32_t uncol = getMaximumNumberofUnitsofUnifiedLayer(layer - 1);
 
 		cublas_transposeMatrix<DATATYPE>(unrow, uncol, inp_rnvec + offset, W, cublas_handle);
+		//cudaDeviceSynchronize();
+		//std::cout << "checkpoint\n";
+		//printMatrix<DATATYPE>(1, getTotalLayerWeightsandBiases(), inp_rnvec);
 
 		uint32_t nrow = getNumberofUnitsbyTaskLayer(task, layer);
 		uint32_t ncol = getNumberofUnitsbyTaskLayer(task, layer - 1);
@@ -361,17 +364,17 @@ struct MFEA_Chromosome {
 					auto b_tup = getLayerBiasesbyTaskLayer(task, layer);
 					uint32_t b_off = std::get<OFFSET_IDX>(b_tup), b_size = std::get<SIZE_IDX>(b_tup);
 
-					cudaDeviceSynchronize();
-					printMatrix<DATATYPE>(w_nrow, w_ncol, mat_temp_w);
-					printMatrix<DATATYPE>(1, b_size, mat_temp_rnvec + b_off);
+					//cudaDeviceSynchronize();
+					//printMatrix<DATATYPE>(w_nrow, w_ncol, mat_temp_w);
+					//printMatrix<DATATYPE>(1, b_size, mat_temp_rnvec + b_off);
 
 					cublas_multiplyMatrices<DATATYPE>(training_size, b_size, 1,
 														mat_one,
 														mat_temp_rnvec + b_off,	// layer index started at 0
 														mat_temp_layer[layer],	// layer index started at 0
 														cublas_handle);
-					cudaDeviceSynchronize();
-					printMatrix<DATATYPE>(training_size, b_size, mat_temp_layer[layer]);
+					//cudaDeviceSynchronize();
+					//printMatrix<DATATYPE>(training_size, b_size, mat_temp_layer[layer]);
 
 					// multiply add z[i] = z[i-1] * w[i-1] + b[i-1]
 					cublas_multiplyandaddMatrices<DATATYPE>(training_size, b_size, w_nrow,
@@ -379,13 +382,13 @@ struct MFEA_Chromosome {
 															mat_temp_w,
 															mat_temp_layer[layer],
 															cublas_handle);
-					cudaDeviceSynchronize();
-					printMatrix<DATATYPE>(training_size, b_size, mat_temp_layer[layer]);
+					//cudaDeviceSynchronize();
+					//printMatrix<DATATYPE>(training_size, b_size, mat_temp_layer[layer]);
 
 					// apply activation function default by sigmoid
 					cuda_sigmoid<DATATYPE>(training_size, b_size, mat_temp_layer[layer], mat_temp_layer[layer]);
-					cudaDeviceSynchronize();
-					printMatrix<DATATYPE>(training_size, b_size, mat_temp_layer[layer]);
+					//cudaDeviceSynchronize();
+					//printMatrix<DATATYPE>(training_size, b_size, mat_temp_layer[layer]);
 				}
 
 				// decode w
@@ -396,17 +399,17 @@ struct MFEA_Chromosome {
 				auto b_tup = getLayerBiasesbyTaskLayer(task, numberof_layers);
 				uint32_t b_off = std::get<OFFSET_IDX>(b_tup), b_size = std::get<SIZE_IDX>(b_tup);
 
-				cudaDeviceSynchronize();
-				printMatrix<DATATYPE>(w_nrow, w_ncol, mat_temp_w);
-				printMatrix<DATATYPE>(1, b_size, mat_temp_rnvec + b_off);
+				//cudaDeviceSynchronize();
+				//printMatrix<DATATYPE>(w_nrow, w_ncol, mat_temp_w);
+				//printMatrix<DATATYPE>(1, b_size, mat_temp_rnvec + b_off);
 
 				cublas_multiplyMatrices<DATATYPE>(training_size, b_size, 1,
 													mat_one,
 													mat_temp_rnvec + b_off,	// layer index started at 0
 													mat_temp_layer[numberof_layers],	// layer index started at 0
 													cublas_handle);
-				cudaDeviceSynchronize();
-				printMatrix<DATATYPE>(training_size, b_size, mat_temp_layer[numberof_layers]);
+				//cudaDeviceSynchronize();
+				//printMatrix<DATATYPE>(training_size, b_size, mat_temp_layer[numberof_layers]);
 
 				// multiply add z[i] = z[i-1] * w[i-1] + b[i-1]
 				cublas_multiplyandaddMatrices<DATATYPE>(training_size, b_size, w_nrow,
@@ -414,19 +417,19 @@ struct MFEA_Chromosome {
 														mat_temp_w,
 														mat_temp_layer[numberof_layers],
 														cublas_handle);
-				cudaDeviceSynchronize();
-				printMatrix<DATATYPE>(training_size, b_size, mat_temp_layer[numberof_layers]);
+				//cudaDeviceSynchronize();
+				//printMatrix<DATATYPE>(training_size, b_size, mat_temp_layer[numberof_layers]);
 
 				// apply activation function softmax to final layer
 				cuda_sigmoid<DATATYPE>(training_size, b_size, mat_temp_layer[numberof_layers], mat_temp_layer[numberof_layers]);
-				cudaDeviceSynchronize();
-				printMatrix<DATATYPE>(training_size, b_size, mat_temp_layer[numberof_layers]);
+				//cudaDeviceSynchronize();
+				//printMatrix<DATATYPE>(training_size, b_size, mat_temp_layer[numberof_layers]);
 
 				
 				// eval cross entropy over the training_size
-				BUG(getNumberofUnitsofLastLayerbyTask(task));
-				printMatrix<DATATYPE>(training_size, getNumberofUnitsofLastLayerbyTask(task), Y);
-				printMatrix<DATATYPE>(training_size, getNumberofUnitsofLastLayerbyTask(task), mat_temp_layer[numberof_layers]);
+				//BUG(getNumberofUnitsofLastLayerbyTask(task));
+				//printMatrix<DATATYPE>(training_size, getNumberofUnitsofLastLayerbyTask(task), Y);
+				//printMatrix<DATATYPE>(training_size, getNumberofUnitsofLastLayerbyTask(task), mat_temp_layer[numberof_layers]);
 				factorial_costs[task] = cuda_evalMSE<DATATYPE>(training_size, getNumberofUnitsofLastLayerbyTask(task),
 																		Y, mat_temp_layer[numberof_layers]);
 				
