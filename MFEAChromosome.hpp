@@ -258,9 +258,9 @@ struct MFEA_Chromosome {
 		for (uint32_t i = 0; i < getTotalLayerWeightsandBiases(); ++i) {
 			os << chromo.rnvec[i] << " ";
 		} os << std::endl;
-		/*for (uint32_t i = 0; i < LAYER_SIZE; ++i) {
+		/*for (uint32_t i = 0; i < getNumberofLayersbyTask(chromo.skill_factor); ++i) {
 			os << "Layer " << i << "(size = " << getMaximumLayerWeightsandBiasesbyLayer(i + 1) << "): ";
-			uint32_t loff = getLayerOffset(i + 1);
+			uint32_t loff = getLayerOffset(chromo.skill_factor, i + 1);
 			for (uint32_t j = 0; j < getMaximumLayerWeightsandBiasesbyLayer(i + 1); ++j) {
 				os << chromo.rnvec[loff + j] << " ";
 			}
@@ -345,9 +345,7 @@ struct MFEA_Chromosome {
 		DATATYPE factorial_cost_min = std::numeric_limits<DATATYPE>::max();
 
 		// do weights transformation before evaluating
-		
-		thrust::transform(thrust::device, this->rnvec, this->rnvec + getTotalLayerWeightsandBiases(), mat_temp_rnvec, __functor_weights_transform<float>(-5, 5));
-		// printGPUArray(mat_temp_w, getTotalLayerWeightsandBiases());
+		thrust::transform(thrust::device, this->rnvec, this->rnvec + getTotalLayerWeightsandBiases(), mat_temp_rnvec, __functor_weights_transform<DATATYPE>(-5, 5));
 
 		mat_temp_layer[0] = X;
 
