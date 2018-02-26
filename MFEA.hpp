@@ -113,7 +113,7 @@ private:
 	std::array<DATATYPE*, thread_size> dev_mat_temp_rnvec;
 	std::array<DATATYPE*, thread_size> dev_mat_temp_w;
 	std::array<DATATYPE*, thread_size> dev_mat_ones;	// by thread index
-	std::array<std::array<DATATYPE*, LAYER_SIZE>, thread_size> dev_mat_temp_layers;	// by thread index and layer index
+	std::array<std::array<DATATYPE*, LAYER_SIZE + 1>, thread_size> dev_mat_temp_layers;	// by thread index and layer index
 
 	
 	// crossover and mutation preallocated memory
@@ -169,17 +169,17 @@ public:
 		
 		/* Initialize temporary space */
 		for (uint32_t i = 0; i < thread_size; ++i) {
-			cudaCALL(CUDA_M_MALLOC_MANAGED(dev_mat_temp_rnvec[i], DATATYPE, getMaximumLayerWeightsandBiasesatAll()));
-			cudaCALL(CUDA_M_MALLOC_MANAGED(dev_mat_temp_w[i], DATATYPE, getMaximumLayerWeightsandBiasesatAll()));
+			cudaCALL(CUDA_M_MALLOC_MANAGED(dev_mat_temp_rnvec[i], DATATYPE, getTotalLayerWeightsandBiases()));
+			cudaCALL(CUDA_M_MALLOC_MANAGED(dev_mat_temp_w[i], DATATYPE, getTotalLayerWeightsandBiases()));
 			// pre-allocate mat_one by TRAINING_SIZE
 			// mat_one is used for populating biases
 			cudaCALL(CUDA_M_MALLOC_MANAGED(dev_mat_ones[i], DATATYPE, TRAINING_SIZE));
 			cuda_fillMatrix<DATATYPE>(TRAINING_SIZE, 1, dev_mat_ones[i], 1.0f);
 			
-			for (uint32_t j = 0; j < LAYER_SIZE; ++j) {
+			for (uint32_t j = 0; j < LAYER_SIZE + 1; ++j) {
 				// pre-allocate by TRAINING_SIZE multiple by the largest number of units in each layer
 				// dev_mat_temp_layers is used for storing temp matrix during forward propagation
-				cudaCALL(CUDA_M_MALLOC_MANAGED(dev_mat_temp_layers[i][j], DATATYPE, TRAINING_SIZE * getNumberofUnitsbyTaskLayer(TASKINDEX_LARGEST, j + 1)));
+				cudaCALL(CUDA_M_MALLOC_MANAGED(dev_mat_temp_layers[i][j], DATATYPE, TRAINING_SIZE * getMaximumNumberofUnitsofUnifiedLayer(j)));
 			}
 			
 			// pre-allocate dev_ct_beta by logest weights and biases vector
