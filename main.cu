@@ -67,7 +67,7 @@ void testEval();
 
 
 int main(int argc, char** argv) {
-	/* manually set device for running */
+	// manually set device for running
 	int device_id;
 	if (argc > 1) {
 		device_id = atoi(argv[1]);
@@ -78,12 +78,12 @@ int main(int argc, char** argv) {
 	cudaSetDevice(device_id);
 
 	
-	/* load input data */
+	// load input data
 	loadDataFile<DATATYPE>(training_input_data, training_output_data, testing_input_data, testing_output_data);
 
 
-	/* Total CPU Page faults: 1384 for float */
-	/* Total CPU Page faults: 2477 for double */
+	// Total CPU Page faults: 1384 for float
+	// Total CPU Page faults: 2477 for double
 	
 	{// limit scope for object destruct before destroy CUDA environment
 		MFEA<90, 1000, 2> mfea(training_input_data, training_output_data,
@@ -100,21 +100,21 @@ int main(int argc, char** argv) {
 		mfea.reEvaluateTheFinalPopulation();
 		
 		
-		/*for (uint32_t i = 0; i < 200; ++i) {
-			float __cf_distributionindex		= 1.0 * (std::rand() % 11);			// randomize between 0 - 10
-			float __mf_randommatingprobability	= 1.0;
-			float __mf_polynomialmutationindex	= 1.0 * (std::rand() % 11);			// randomize between 0 - 10
-			float __mf_mutationratio			= 0.05 * (1 + std::rand() % 10);	// randomize between 5% - 50%
-			mfea.setTunableFactors(__cf_distributionindex,
-										__mf_randommatingprobability,
-										__mf_polynomialmutationindex,
-										__mf_mutationratio	);
+		// for (uint32_t i = 0; i < 200; ++i) {
+		// 	float __cf_distributionindex		= 1.0 * (std::rand() % 11);			// randomize between 0 - 10
+		// 	float __mf_randommatingprobability	= 1.0;
+		// 	float __mf_polynomialmutationindex	= 1.0 * (std::rand() % 11);			// randomize between 0 - 10
+		// 	float __mf_mutationratio			= 0.05 * (1 + std::rand() % 10);	// randomize between 5% - 50%
+		// 	mfea.setTunableFactors(__cf_distributionindex,
+		// 								__mf_randommatingprobability,
+		// 								__mf_polynomialmutationindex,
+		// 								__mf_mutationratio	);
 			
-			mfea.initialize();
-			mfea.evolution();
-			mfea.sumariseResults();
-			mfea.writeSumaryResults();
-		}*/
+		// 	mfea.initialize();
+		// 	mfea.evolution();
+		// 	mfea.sumariseResults();
+		// 	mfea.writeSumaryResults();
+		// }
 		
 
 		mfea.finalize_libraries();
@@ -123,13 +123,14 @@ int main(int argc, char** argv) {
 	showMUltitasksSetting();
 
 	
-    /* Reset CUDA evironment */
+    // Reset CUDA evironment
     cudaDeviceReset();
     
 	return 0;
 }
 
-/*int main(int argc, char** argv) {
+/*
+int main(int argc, char** argv) {
 	// manually set device for running
 	int device_id;
 	if (argc > 1) {
@@ -158,7 +159,7 @@ int main(int argc, char** argv) {
 
 
 
-	testEval();
+	testSBX();
 
 	
 	
