@@ -1,4 +1,5 @@
 *.txt
 main.o
 mfea
+*.log
 
