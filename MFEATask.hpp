@@ -90,14 +90,20 @@ inline static uint32_t getNumberofUnitsbyTaskLayer(uint32_t task, uint32_t layer
 	return TASK_LAYERSIZES[task][layer];
 }
 
+/** Return the number of units for the output layer of corresponding task
+*/
 inline static uint32_t getNumberofUnitsofLastLayerbyTask(uint32_t task) {
 	return getNumberofUnitsbyTaskLayer(task, getNumberofLayersbyTask(task));
 }
 
+/** Return the number of units for the last hidden layer of corresponding task
+*/
 inline static uint32_t getNumberofUnitsofLastHiddenLayerbyTask(uint32_t task) {
 	return getNumberofUnitsbyTaskLayer(task, getNumberofLayersbyTask(task) - 1);
 }
 
+/** Return the number of units for the coressponding unified layer
+*/
 inline static uint32_t getMaximumNumberofUnitsofUnifiedLayer(uint32_t layer) {
 	uint32_t nunits = 0;
 	if (layer == LAYER_SIZE - 1) {
@@ -116,11 +122,15 @@ inline static uint32_t getMaximumNumberofUnitsofUnifiedLayer(uint32_t layer) {
 	return nunits;
 }
 
+/** Return the number of parameters (including biases) for the corresponding unified layer
+*/
 inline static uint32_t getMaximumLayerWeightsandBiasesbyLayer(uint32_t layer) {
 	assert(layer > 0);
 	return getMaximumNumberofUnitsofUnifiedLayer(layer) * (getMaximumNumberofUnitsofUnifiedLayer(layer - 1) + 1);
 }
 
+/** Return the number of parameters (including biases) for the largest unified layer
+*/
 inline static uint32_t getMaximumLayerWeightsandBiasesatAll() {
 	uint32_t n = 0;
 	for (uint32_t layer = 1; layer <= LAYER_SIZE; ++layer) {
@@ -131,6 +141,8 @@ inline static uint32_t getMaximumLayerWeightsandBiasesatAll() {
 	return n;
 }
 
+/** Return total number of parameters of the unified representation
+*/
 inline static uint32_t getTotalLayerWeightsandBiases() {
 	uint32_t sum = 0;
 	for (uint32_t layer = 1; layer <= LAYER_SIZE; ++layer) {
@@ -139,8 +151,8 @@ inline static uint32_t getTotalLayerWeightsandBiases() {
 	return sum;
 }
 
-
-
+/** Return data offset for unified layer weights
+*/
 inline static uint32_t getUnifiedLayerOffset(uint32_t layer) {
 	assert(layer > 0);
 	if (layer <= 1) {
@@ -150,6 +162,8 @@ inline static uint32_t getUnifiedLayerOffset(uint32_t layer) {
 	}
 }
 
+/** Return data offset for unified layer biases
+*/
 inline static uint32_t getUnifiedBiasOffset(uint32_t layer) {
 	assert(layer > 0);
 	if (layer < 1) {
@@ -159,6 +173,8 @@ inline static uint32_t getUnifiedBiasOffset(uint32_t layer) {
 	}
 }
 
+/** Return data offset for layer weights
+*/
 inline static uint32_t getLayerOffset(uint32_t task, uint32_t layer) {
 	assert(layer <= getNumberofLayersbyTask(task));
 	if ((getNumberofLayersbyTask(task) < getUnifiedNumberofLayers()) && (getNumberofLayersbyTask(task) == layer)) {
@@ -170,6 +186,8 @@ inline static uint32_t getLayerOffset(uint32_t task, uint32_t layer) {
 	}
 }
 
+/** Return data offset for layer biases
+*/
 inline static uint32_t getBiasOffset(uint32_t task, uint32_t layer) {
 	assert(layer <= getNumberofLayersbyTask(task));
 	if ((getNumberofLayersbyTask(task) < getUnifiedNumberofLayers()) && (getNumberofLayersbyTask(task) == layer)) {
@@ -181,14 +199,20 @@ inline static uint32_t getBiasOffset(uint32_t task, uint32_t layer) {
 	}
 }
 
+/** Return tuple <offset, size> for layer weights
+*/
 inline static std::tuple<uint32_t, size_t> getLayerWeightsbyTaskLayer(uint32_t task, uint32_t layer) {	// return offset and size
 	return std::make_tuple<uint32_t, size_t>(getLayerOffset(task, layer), getNumberofUnitsbyTaskLayer(task, layer) * getNumberofUnitsbyTaskLayer(task, layer - 1));
 }
 
+/** Return tuple <offset, size> for layer biases
+*/
 inline static std::tuple<uint32_t, size_t> getLayerBiasesbyTaskLayer(uint32_t task, uint32_t layer) {	// return offset and size
 	return std::make_tuple<uint32_t, size_t>(getBiasOffset(task, layer), getNumberofUnitsbyTaskLayer(task, layer));
 }
 
+/** Return tuple <offset, size> for layer parameters (weights and biases)
+*/
 inline static std::tuple<uint32_t, size_t> getLayerWeightsandBiasesbyTaskLayer(uint32_t task, uint32_t layer) {	// return offset and size
 	return std::make_tuple<uint32_t, size_t>(getLayerOffset(task, layer), getNumberofUnitsbyTaskLayer(task, layer) * (getNumberofUnitsbyTaskLayer(task, layer - 1) + 1));
 }
