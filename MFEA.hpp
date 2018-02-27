@@ -257,30 +257,30 @@ public:
 			// random shuffle before crossing over
 			std::random_shuffle(population.begin(), population.begin() + population_size);
 
-
 			count = 0;
 			for (uint32_t i = 0; i < population_size / 2; ++i) {
-				if ((population[i].skill_factor == population[i].skill_factor) || rand() <= mf_randommatingprobability) {
-					crossover(population[i], population[population_size / 2 + i], population[population_size + count], population[population_size + count + 1], cf_distributionindex, dev_ct_beta[THREAD_IDX_CURRENT], curand_prng);
+				uint32_t p1 = i, p2 = population_size / 2 + i, c1 = population_size + count, c2 = population_size + count + 1;
+				if ((population[p1].skill_factor == population[p2].skill_factor) || f_rand() <= mf_randommatingprobability) {
+					crossover(population[p1], population[p2], population[c1], population[c2], cf_distributionindex, dev_ct_beta[THREAD_IDX_CURRENT], curand_prng);
 
 					
-					mutate(population[population_size + count], population[population_size + count], mf_polynomialmutationindex, mf_mutationratio, dev_ct_beta[THREAD_IDX_CURRENT], dev_rand[THREAD_IDX_CURRENT], curand_prng);
-					mutate(population[population_size + count + 1], population[population_size + count + 1], mf_polynomialmutationindex, mf_mutationratio, dev_ct_beta[THREAD_IDX_CURRENT], dev_rand[THREAD_IDX_CURRENT], curand_prng);
+					mutate(population[c1], population[c1], mf_polynomialmutationindex, mf_mutationratio, dev_ct_beta[THREAD_IDX_CURRENT], dev_rand[THREAD_IDX_CURRENT], curand_prng);
+					mutate(population[c2], population[c2], mf_polynomialmutationindex, mf_mutationratio, dev_ct_beta[THREAD_IDX_CURRENT], dev_rand[THREAD_IDX_CURRENT], curand_prng);
 					
 					// probabilistic assign the skill factor for children from their parents 
-					if (rand() <= 0.5) {
-						population[population_size + count].skill_factor = population[i].skill_factor;
+					if (f_rand() <= 0.5) {
+						population[c1].skill_factor = population[p1].skill_factor;
 					} else {
-						population[population_size + count].skill_factor = population[population_size / 2 + i].skill_factor;
+						population[c1].skill_factor = population[p2].skill_factor;
 					}
-					if (rand() <= 0.5) {
-						population[population_size + count + 1].skill_factor = population[i].skill_factor;
+					if (f_rand() <= 0.5) {
+						population[c2].skill_factor = population[p1].skill_factor;
 					} else {
-						population[population_size + count + 1].skill_factor = population[population_size / 2 + i].skill_factor;
+						population[c2].skill_factor = population[p2].skill_factor;
 					}
 					
 					// Uniform crossover-like variable swap between two new born children
-					uniformcrossoverlike(population[population_size + count], population[population_size + count + 1], dev_ct_beta[THREAD_IDX_CURRENT], curand_prng);
+					uniformcrossoverlike(population[c1], population[c2], dev_ct_beta[THREAD_IDX_CURRENT], curand_prng);
 
 					//examineIndividual(population[population_size + count]);
 					//transformWeights(population[population_size + count], dev_ct_beta[THREAD_IDX_CURRENT], curand_prng);
