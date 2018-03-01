@@ -342,7 +342,7 @@ public:
 			
 			// evaluate scalar fitness for selection
 			for (uint32_t i = 0; i < 2 * population_size; ++i) {
-				float temp = 1.0 / *std::min_element(population[i].factorial_rank.begin(), population[i].factorial_rank.end());
+				DATATYPE temp = 1.0 / *std::min_element(population[i].factorial_rank.begin(), population[i].factorial_rank.end());
 				population[i].scalar_fitness = temp;
 				//std::cout << population[i].factorial_rank[0] << "\t" << population[i].factorial_rank[1] << "\t" << population[i].factorial_rank[2] << std::endl;
 				//std::cout << temp << std::endl;
