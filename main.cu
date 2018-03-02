@@ -63,6 +63,8 @@ void showMUltitasksSetting() {
 void testDecode();
 void testSBX();
 void testPMU();
+void testUCL();
+void testReproduce();
 void testEval();
 
 
@@ -85,42 +87,43 @@ int main(int argc, char** argv) {
 	// Total CPU Page faults: 1384 for float
 	// Total CPU Page faults: 2477 for double
 	
-	{// limit scope for object destruct before destroy CUDA environment
-		MFEA<90, 1000, 2> mfea(training_input_data, training_output_data,
-							testing_input_data, testing_output_data,
-							device_id);
-		if (mfea.init_libraries() != 0) {
-			return EXIT_FAILURE;
-		}
+	// {// limit scope for object destruct before destroy CUDA environment
+	// 	MFEA<120, 1000, 2> mfea(training_input_data, training_output_data,
+	// 						testing_input_data, testing_output_data,
+	// 						device_id);
+	// 	if (mfea.init_libraries() != 0) {
+	// 		return EXIT_FAILURE;
+	// 	}
 		
-		mfea.initialize();	// does not cause page fault
-		mfea.evolution();	// does not cause page fault
-		mfea.sumariseResults();
-		mfea.writeSumaryResults();
-		mfea.reEvaluateTheFinalPopulation();
+	// 	mfea.initialize();	// does not cause page fault
+	// 	mfea.evolution();	// does not cause page fault
+	// 	mfea.sumariseResults();
+	// 	mfea.writeSumaryResults();
+	// 	mfea.reEvaluateTheFinalPopulation();
 		
 		
-		// for (uint32_t i = 0; i < 200; ++i) {
-		// 	float __cf_distributionindex		= 1.0 * (std::rand() % 11);			// randomize between 0 - 10
-		// 	float __mf_randommatingprobability	= 1.0;
-		// 	float __mf_polynomialmutationindex	= 1.0 * (std::rand() % 11);			// randomize between 0 - 10
-		// 	float __mf_mutationratio			= 0.05 * (1 + std::rand() % 10);	// randomize between 5% - 50%
-		// 	mfea.setTunableFactors(__cf_distributionindex,
-		// 								__mf_randommatingprobability,
-		// 								__mf_polynomialmutationindex,
-		// 								__mf_mutationratio	);
+	// 	// for (uint32_t i = 0; i < 200; ++i) {
+	// 	// 	float __cf_distributionindex		= 1.0 * (std::rand() % 11);			// randomize between 0 - 10
+	// 	// 	float __mf_randommatingprobability	= 1.0;
+	// 	// 	float __mf_polynomialmutationindex	= 1.0 * (std::rand() % 11);			// randomize between 0 - 10
+	// 	// 	float __mf_mutationratio			= 0.05 * (1 + std::rand() % 10);	// randomize between 5% - 50%
+	// 	// 	mfea.setTunableFactors(__cf_distributionindex,
+	// 	// 								__mf_randommatingprobability,
+	// 	// 								__mf_polynomialmutationindex,
+	// 	// 								__mf_mutationratio	);
 			
-		// 	mfea.initialize();
-		// 	mfea.evolution();
-		// 	mfea.sumariseResults();
-		// 	mfea.writeSumaryResults();
-		// }
+	// 	// 	mfea.initialize();
+	// 	// 	mfea.evolution();
+	// 	// 	mfea.sumariseResults();
+	// 	// 	mfea.writeSumaryResults();
+	// 	// }
 		
 
-		mfea.finalize_libraries();
-	}
+	// 	mfea.finalize_libraries();
+	// }
 	
-	showMUltitasksSetting();
+	// showMUltitasksSetting();
+	testReproduce();
 
 	
     // Reset CUDA evironment
@@ -224,20 +227,10 @@ void testSBX() {
 	curandSetPseudoRandomGeneratorSeed(curand_prng, 0);
 	
 	std::array<MFEA_Chromosome, 4> population;
-	thrust::for_each(population.begin(), population.end(), MFEA_Chromosome_Randomize(curand_prng));
-
 
 	DATATYPE* ct_beta;
 	cudaCALL(CUDA_M_MALLOC_MANAGED(ct_beta, DATATYPE, getTotalLayerWeightsandBiases()));
 
-
-
-	cudaDeviceSynchronize();
-	BUG(getTotalLayerWeightsandBiases());
-	for (uint32_t i = 0; i < getTotalLayerWeightsandBiases(); ++i) {
-		population[0].rnvec[i] = double(i) / getTotalLayerWeightsandBiases();
-		population[1].rnvec[i] = double(i) / getTotalLayerWeightsandBiases();
-	}
 
 	test_crossover(population[0], population[1],
 						  population[2], population[3],
@@ -245,13 +238,6 @@ void testSBX() {
 						  curand_prng);
 
 	examineCrossover(population[0], population[1], population[2], population[3]);
-
-	cudaDeviceSynchronize();
-	
-	std::cout << population[0];
-	std::cout << population[1];
-	std::cout << population[2];
-	std::cout << population[3];
 }
 
 void testPMU() {
@@ -262,8 +248,6 @@ void testPMU() {
 	curandSetPseudoRandomGeneratorSeed(curand_prng, 0);
 	
 	std::array<MFEA_Chromosome, 4> population;
-	thrust::for_each(population.begin(), population.end(), MFEA_Chromosome_Randomize(curand_prng));
-
 
 	DATATYPE* ct_beta;
 	DATATYPE* rp;
@@ -271,18 +255,47 @@ void testPMU() {
 	cudaCALL(CUDA_M_MALLOC_MANAGED(rp, DATATYPE, getTotalLayerWeightsandBiases()));
 
 
-	cudaDeviceSynchronize();
-	BUG(getTotalLayerWeightsandBiases());
-	for (uint32_t i = 0; i < getTotalLayerWeightsandBiases(); ++i) {
-		population[0].rnvec[i] = double(i) / getTotalLayerWeightsandBiases();
-	}
-
 	test_mutate(population[0], population[1],
 						5, 1,
 						ct_beta, rp, curand_prng);
+}
 
-	cudaDeviceSynchronize();
-	std::cout << population[1];
+void testUCL() {
+	curandGenerator_t curand_prng;
+	// Create a pseudo-random number generator
+	curandCreateGenerator(&curand_prng, CURAND_RNG_PSEUDO_MTGP32);
+	// Set the seed for the random number generator using the system clock
+	curandSetPseudoRandomGeneratorSeed(curand_prng, 0);
+	
+	std::array<MFEA_Chromosome, 4> population;
+
+	DATATYPE* ct_beta;
+	cudaCALL(CUDA_M_MALLOC_MANAGED(ct_beta, DATATYPE, getTotalLayerWeightsandBiases()));
+
+
+	test_uniformcrossoverlike(population[0], population[1],	ct_beta, curand_prng);
+}
+
+void testReproduce() {
+	curandGenerator_t curand_prng;
+	// Create a pseudo-random number generator
+	curandCreateGenerator(&curand_prng, CURAND_RNG_PSEUDO_MTGP32);
+	// Set the seed for the random number generator using the system clock
+	curandSetPseudoRandomGeneratorSeed(curand_prng, 0);
+	
+	std::array<MFEA_Chromosome, 4> population;
+
+	DATATYPE* ct_beta;
+	DATATYPE* rp;
+	cudaCALL(CUDA_M_MALLOC_MANAGED(ct_beta, DATATYPE, getTotalLayerWeightsandBiases()));
+	cudaCALL(CUDA_M_MALLOC_MANAGED(rp, DATATYPE, getTotalLayerWeightsandBiases()));
+
+
+	test_reproduce(population[0], population[1],
+						  population[2], population[3],
+						  2, 5, 1,
+						  ct_beta, rp,
+						  curand_prng);
 }
 
 void testEval() {
