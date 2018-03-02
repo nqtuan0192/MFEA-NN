@@ -71,7 +71,7 @@ void testUCL();
 void testReproduce();
 void testEval();
 
-
+/*
 int main(int argc, char** argv) {
 	// manually set device for running
 	int device_id;
@@ -135,8 +135,8 @@ int main(int argc, char** argv) {
     
 	return 0;
 }
+*/
 
-/*
 int main(int argc, char** argv) {
 	// manually set device for running
 	int device_id;
@@ -162,11 +162,13 @@ int main(int argc, char** argv) {
 
 	
 	// load input data
-	loadDataFile<DATATYPE>(training_input_data, training_output_data, testing_input_data, testing_output_data);
+	loadMnistData<DATATYPE>(training_images_data, training_labels_data, training_input_data, training_output_data, TRAINING_DATA);
+	loadMnistData<DATATYPE>(testing_images_data, testing_labels_data, testing_input_data, testing_output_data, TESTING_DATA);
 
 
 
-	testSBX();
+
+	testDecode();
 
 	
 	
@@ -177,7 +179,7 @@ int main(int argc, char** argv) {
     cudaDeviceReset();
     
 	return 0;
-}*/
+}
 
 void testDecode() {
 	cublasHandle_t cublas_handle;
