@@ -369,8 +369,15 @@ struct MFEA_Chromosome {
 		uint32_t offset = std::get<0>(tup);
 		size_t size = std::get<1>(tup);
 
-		uint32_t unrow = getMaximumNumberofUnitsofUnifiedLayer(layer);
-		uint32_t uncol = getMaximumNumberofUnitsofUnifiedLayer(layer - 1);
+		uint32_t unrow;
+		uint32_t uncol;
+		if (layer == getNumberofLayersbyTask(task)) {
+			unrow = getMaximumNumberofUnitsofUnifiedLayer(getUnifiedNumberofLayers());
+			uncol = getMaximumNumberofUnitsofUnifiedLayer(getUnifiedNumberofLayers() - 1);
+		} else {
+			unrow = getMaximumNumberofUnitsofUnifiedLayer(layer);
+			uncol = getMaximumNumberofUnitsofUnifiedLayer(layer - 1);
+		}
 
 		cublas_transposeMatrix<DATATYPE>(unrow, uncol, inp_rnvec + offset, W, cublas_handle);
 		//cudaDeviceSynchronize();
