@@ -179,7 +179,7 @@ public:
 			for (uint32_t j = 0; j < LAYER_SIZE + 1; ++j) {
 				// pre-allocate by TRAINING_SIZE multiple by the largest number of units in each layer
 				// dev_mat_temp_layers is used for storing temp matrix during forward propagation
-				cudaCALL(CUDA_M_MALLOC_MANAGED(dev_mat_temp_layers[i][j], DATATYPE, TRAINING_SIZE * getMaximumNumberofUnitsofUnifiedLayer(j)));
+				cudaCALL(CUDA_M_MALLOC_MANAGED(dev_mat_temp_layers[i][j], DATATYPE, TRAINING_SIZE * 10));
 			}
 			
 			// pre-allocate dev_ct_beta by logest weights and biases vector

@@ -71,7 +71,7 @@ void testUCL();
 void testReproduce();
 void testEval();
 
-/*
+
 int main(int argc, char** argv) {
 	// manually set device for running
 	int device_id;
@@ -135,8 +135,8 @@ int main(int argc, char** argv) {
     
 	return 0;
 }
-*/
 
+/*
 int main(int argc, char** argv) {
 	// manually set device for running
 	int device_id;
@@ -179,7 +179,7 @@ int main(int argc, char** argv) {
     cudaDeviceReset();
     
 	return 0;
-}
+}*/
 
 void testDecode() {
 	cublasHandle_t cublas_handle;
