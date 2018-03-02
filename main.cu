@@ -87,43 +87,42 @@ int main(int argc, char** argv) {
 	// Total CPU Page faults: 1384 for float
 	// Total CPU Page faults: 2477 for double
 	
-	// {// limit scope for object destruct before destroy CUDA environment
-	// 	MFEA<120, 1000, 2> mfea(training_input_data, training_output_data,
-	// 						testing_input_data, testing_output_data,
-	// 						device_id);
-	// 	if (mfea.init_libraries() != 0) {
-	// 		return EXIT_FAILURE;
-	// 	}
+	{// limit scope for object destruct before destroy CUDA environment
+		MFEA<120, 1000, 2> mfea(training_input_data, training_output_data,
+							testing_input_data, testing_output_data,
+							device_id);
+		if (mfea.init_libraries() != 0) {
+			return EXIT_FAILURE;
+		}
 		
-	// 	mfea.initialize();	// does not cause page fault
-	// 	mfea.evolution();	// does not cause page fault
-	// 	mfea.sumariseResults();
-	// 	mfea.writeSumaryResults();
-	// 	mfea.reEvaluateTheFinalPopulation();
+		mfea.initialize();	// does not cause page fault
+		mfea.evolution();	// does not cause page fault
+		mfea.sumariseResults();
+		mfea.writeSumaryResults();
+		mfea.reEvaluateTheFinalPopulation();
 		
 		
-	// 	// for (uint32_t i = 0; i < 200; ++i) {
-	// 	// 	float __cf_distributionindex		= 1.0 * (std::rand() % 11);			// randomize between 0 - 10
-	// 	// 	float __mf_randommatingprobability	= 1.0;
-	// 	// 	float __mf_polynomialmutationindex	= 1.0 * (std::rand() % 11);			// randomize between 0 - 10
-	// 	// 	float __mf_mutationratio			= 0.05 * (1 + std::rand() % 10);	// randomize between 5% - 50%
-	// 	// 	mfea.setTunableFactors(__cf_distributionindex,
-	// 	// 								__mf_randommatingprobability,
-	// 	// 								__mf_polynomialmutationindex,
-	// 	// 								__mf_mutationratio	);
+		// for (uint32_t i = 0; i < 200; ++i) {
+		// 	float __cf_distributionindex		= 1.0 * (std::rand() % 11);			// randomize between 0 - 10
+		// 	float __mf_randommatingprobability	= 1.0;
+		// 	float __mf_polynomialmutationindex	= 1.0 * (std::rand() % 11);			// randomize between 0 - 10
+		// 	float __mf_mutationratio			= 0.05 * (1 + std::rand() % 10);	// randomize between 5% - 50%
+		// 	mfea.setTunableFactors(__cf_distributionindex,
+		// 								__mf_randommatingprobability,
+		// 								__mf_polynomialmutationindex,
+		// 								__mf_mutationratio	);
 			
-	// 	// 	mfea.initialize();
-	// 	// 	mfea.evolution();
-	// 	// 	mfea.sumariseResults();
-	// 	// 	mfea.writeSumaryResults();
-	// 	// }
+		// 	mfea.initialize();
+		// 	mfea.evolution();
+		// 	mfea.sumariseResults();
+		// 	mfea.writeSumaryResults();
+		// }
 		
 
-	// 	mfea.finalize_libraries();
-	// }
+		mfea.finalize_libraries();
+	}
 	
-	// showMUltitasksSetting();
-	testReproduce();
+	showMUltitasksSetting();
 
 	
     // Reset CUDA evironment
