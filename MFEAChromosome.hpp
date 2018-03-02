@@ -466,7 +466,10 @@ struct MFEA_Chromosome {
 				//printMatrix<DATATYPE>(training_size, b_size, mat_temp_layer[numberof_layers]);
 
 				// apply activation function softmax to final layer
-				cuda_sigmoid<DATATYPE>(training_size, b_size, mat_temp_layer[numberof_layers], mat_temp_layer[numberof_layers]);
+				cudnn_softmax<DATATYPE>(training_size, b_size,
+										mat_temp_layer[numberof_layers], mat_temp_layer[numberof_layers],
+										cudnn_handle);
+				//cuda_sigmoid<DATATYPE>(training_size, b_size, mat_temp_layer[numberof_layers], mat_temp_layer[numberof_layers]);
 				//cudaDeviceSynchronize();
 				//printMatrix<DATATYPE>(training_size, b_size, mat_temp_layer[numberof_layers]);
 
