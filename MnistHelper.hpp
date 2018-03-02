@@ -10,10 +10,10 @@
 #include "utils.h"
 
 
-#define TRAINING_IMAGES_FILE "mnist/train-images-idx3-ubyte"
-#define TRAINING_LABELS_FILE "mnist/train-labels-idx1-ubyte"
-#define TESTING_IMAGES_FILE "mnist/t10k-images-idx3-ubyte"
-#define TESTING_LABELS_FILE "mnist/t10k-labels-idx1-ubyte"
+#define TRAINING_IMAGES_FILE "dataset/mnist/train-images-idx3-ubyte"
+#define TRAINING_LABELS_FILE "dataset/mnist/train-labels-idx1-ubyte"
+#define TESTING_IMAGES_FILE "dataset/mnist/t10k-images-idx3-ubyte"
+#define TESTING_LABELS_FILE "dataset/mnist/t10k-labels-idx1-ubyte"
 
 #define TRAINING_DATA	true
 #define TESTING_DATA	false
@@ -26,7 +26,7 @@
 #define OUTPUT_SIZE		10
 
 #define TRAINING_SIZE	60000
-#define TEST_SIZE		10000
+#define TESTING_SIZE	10000
 
 
 uint8_t* readImagesFile(const char* filename) {

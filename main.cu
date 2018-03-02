@@ -19,10 +19,10 @@
 #include "Matrix.hpp"
 
 
-//#include "MnistHelper.hpp"
+#include "MnistHelper.hpp"
 //#include "DatasetIonosphereHelper.hpp"
 //#include "DatasetTictactoeHelper.hpp"
-#include "NbitHelper.hpp"
+//#include "NbitHelper.hpp"
 
 
 
@@ -32,10 +32,14 @@
 
 
 // variables for training data
+uint8_t* training_images_data;
+uint8_t* training_labels_data;
 DATATYPE* training_input_data;
 DATATYPE* training_output_data;
 
 // variables for testing data
+uint8_t* testing_images_data;
+uint8_t* testing_labels_data;
 DATATYPE* testing_input_data;
 DATATYPE* testing_output_data;
 
@@ -81,7 +85,8 @@ int main(int argc, char** argv) {
 
 	
 	// load input data
-	loadDataFile<DATATYPE>(training_input_data, training_output_data, testing_input_data, testing_output_data);
+	loadMnistData<DATATYPE>(training_images_data, training_labels_data, training_input_data, training_output_data, TRAINING_DATA);
+	loadMnistData<DATATYPE>(testing_images_data, testing_labels_data, testing_input_data, testing_output_data, TESTING_DATA);
 
 
 	// Total CPU Page faults: 1384 for float

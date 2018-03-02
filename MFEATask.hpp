@@ -5,8 +5,8 @@
 #include <cassert>
 #include <algorithm>
 
-#define INPUT_SIZE	8
-#define OUTPUT_SIZE	1
+#define INPUT_SIZE		IMAGE_SIZE
+#define OUTPUT_SIZE		10
 
 #define NONE_LAYER 	0
 #define OFFSET_IDX	0
