@@ -126,7 +126,7 @@ private:
 	float cf_distributionindex = 2; 			// crossover factor, index of Simulated Binary Crossover
 	float mf_randommatingprobability = 1;		// mutation factor, random mating probability
 	float mf_polynomialmutationindex = 5;		// mutation factor, index of Polynomial Mutation Operator
-	float mf_mutationratio = 0.01;				// mutation factor, 
+	float mf_mutationratio = 1 / getTotalLayerWeightsandBiases();				// mutation factor, 
 	
 	
 	// logging
