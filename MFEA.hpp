@@ -123,10 +123,10 @@ private:
 	const uint32_t THREAD_IDX_CURRENT = 0;
 	
 	// tunable fators
-	float cf_distributionindex = 2; 			// crossover factor, index of Simulated Binary Crossover
-	float mf_randommatingprobability = 1;		// mutation factor, random mating probability
-	float mf_polynomialmutationindex = 5;		// mutation factor, index of Polynomial Mutation Operator
-	float mf_mutationratio = 1 / getTotalLayerWeightsandBiases();				// mutation factor, 
+	DATATYPE cf_distributionindex = 2; 			// crossover factor, index of Simulated Binary Crossover
+	DATATYPE mf_randommatingprobability = 1;		// mutation factor, random mating probability
+	DATATYPE mf_polynomialmutationindex = 5;		// mutation factor, index of Polynomial Mutation Operator
+	DATATYPE mf_mutationratio = 1 / getTotalLayerWeightsandBiases();				// mutation factor, 
 	
 	
 	// logging
@@ -474,10 +474,10 @@ public:
 	}
 	
 	
-	void setTunableFactors(float __cf_distributionindex,
-							float __mf_randommatingprobability,
-							float __mf_polynomialmutationindex,
-							float __mf_mutationratio	) {
+	void setTunableFactors(DATATYPE __cf_distributionindex,
+							DATATYPE __mf_randommatingprobability,
+							DATATYPE __mf_polynomialmutationindex,
+							DATATYPE __mf_mutationratio	) {
 		cf_distributionindex = __cf_distributionindex; 				// crossover factor, index of Simulated Binary Crossover
 		mf_randommatingprobability = __mf_randommatingprobability;	// mutation factor, random mating probability
 		mf_polynomialmutationindex = __mf_polynomialmutationindex;	// mutation factor, index of Polynomial Mutation Operator
