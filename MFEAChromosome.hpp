@@ -496,11 +496,12 @@ struct MFEA_Chromosome {
 					factorial_cost_min = factorial_costs[task];
 				}
 				if (is_evalAcc) {
-					accuracy[task] = cuda_evalAccuracy<DATATYPE>(training_size, getNumberofUnitsofLastLayerbyTask(task),
-															Y, mat_temp_layer[numberof_layers]);
+					cudaDeviceSynchronize();
+					accuracy[task] = evalAccuracy<DATATYPE>(training_size, b_size, Y, mat_temp_layer[numberof_layers]);
 				}
 			} else {
 				factorial_costs[task] = std::numeric_limits<DATATYPE>::max();
+				accuracy[task] = 0;
 			}
 		}
 	}
