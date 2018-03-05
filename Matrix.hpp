@@ -313,6 +313,7 @@ template<> void cudnn_softmax<float>(size_t nrow, size_t ncol, float* mat_in, fl
 
 	cudnnCALL(cudnnDestroyTensorDescriptor(srcTensorDesc));
 	cudnnCALL(cudnnDestroyTensorDescriptor(sftTensorDesc));
+	cudaCALL(cudaStreamSynchronize(handle));
 }
 template<> void cudnn_softmax<double>(size_t nrow, size_t ncol, double* mat_in, double* mat_out, cudnnHandle_t& handle) {
     cudnnTensorDescriptor_t srcTensorDesc, sftTensorDesc;
@@ -328,6 +329,7 @@ template<> void cudnn_softmax<double>(size_t nrow, size_t ncol, double* mat_in, 
 	
 	cudnnCALL(cudnnDestroyTensorDescriptor(srcTensorDesc));
 	cudnnCALL(cudnnDestroyTensorDescriptor(sftTensorDesc));
+	cudaCALL(cudaStreamSynchronize(handle));
 }
 
 
@@ -416,7 +418,7 @@ template<> struct __functor_eliminatezero<float> {
 };
 template<> struct __functor_eliminatezero<double> {
 	__host__ __device__ double operator()(const double& x) {
-		return x != 0 ? x : _DBL_MIN;
+		return x != 0 ? x : 1e-31;
 	}
 };
 // in out pointer COULD be same
