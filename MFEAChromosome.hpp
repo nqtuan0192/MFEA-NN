@@ -438,7 +438,7 @@ struct MFEA_Chromosome {
 					//printMatrix<DATATYPE>(training_size, b_size, mat_temp_layer[layer]);
 
 					// apply activation function default by sigmoid
-					cuda_sigmoid<DATATYPE>(training_size, b_size, mat_temp_layer[layer], mat_temp_layer[layer]);
+					cuda_relu<DATATYPE>(training_size, b_size, mat_temp_layer[layer], mat_temp_layer[layer]);
 					//cudaDeviceSynchronize();
 					//printMatrix<DATATYPE>(training_size, b_size, mat_temp_layer[layer]);
 				}
@@ -476,6 +476,7 @@ struct MFEA_Chromosome {
 				cudnn_softmax<DATATYPE>(training_size, b_size,
 										mat_temp_layer[numberof_layers], mat_temp_layer[numberof_layers],
 										cudnn_handle);
+				cuda_eliminatezero(training_size, b_size, mat_temp_layer[numberof_layers], mat_temp_layer[numberof_layers]);
 				// cuda_sigmoid<DATATYPE>(training_size, b_size, mat_temp_layer[numberof_layers], mat_temp_layer[numberof_layers]);
 				//cudaDeviceSynchronize();
 				//printMatrix<DATATYPE>(training_size, b_size, mat_temp_layer[numberof_layers]);
@@ -485,8 +486,7 @@ struct MFEA_Chromosome {
 				//BUG(getNumberofUnitsofLastLayerbyTask(task));
 				//printMatrix<DATATYPE>(training_size, getNumberofUnitsofLastLayerbyTask(task), Y);
 				//printMatrix<DATATYPE>(training_size, getNumberofUnitsofLastLayerbyTask(task), mat_temp_layer[numberof_layers]);
-				factorial_costs[task] = cuda_evalCrossEntropy<DATATYPE>(training_size, getNumberofUnitsofLastLayerbyTask(task),
-																		Y, mat_temp_layer[numberof_layers]);
+				factorial_costs[task] = cuda_evalCrossEntropy<DATATYPE>(training_size, b_size, Y, mat_temp_layer[numberof_layers]);
 				// factorial_costs[task] = cuda_evalMSE<DATATYPE>(training_size, getNumberofUnitsofLastLayerbyTask(task),
 				// 														Y, mat_temp_layer[numberof_layers]);
 				
