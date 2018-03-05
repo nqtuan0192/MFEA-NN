@@ -127,6 +127,8 @@ private:
 	DATATYPE mf_randommatingprobability = 1;		// mutation factor, random mating probability
 	DATATYPE mf_polynomialmutationindex = 5;		// mutation factor, index of Polynomial Mutation Operator
 	DATATYPE mf_mutationratio = 1 / getTotalLayerWeightsandBiases();				// mutation factor, 
+	uint32_t mfea_batch_training_size = 100;	// subsample data size
+	uint32_t mfea_batch_overlap_size = 0;	// subsample data overlap size
 	
 	
 	// logging
@@ -179,7 +181,7 @@ public:
 			for (uint32_t j = 0; j < LAYER_SIZE + 1; ++j) {
 				// pre-allocate by TRAINING_SIZE multiple by the largest number of units in each layer
 				// dev_mat_temp_layers is used for storing temp matrix during forward propagation
-				cudaCALL(CUDA_M_MALLOC_MANAGED(dev_mat_temp_layers[i][j], DATATYPE, TRAINING_SIZE * 10));
+				cudaCALL(CUDA_M_MALLOC_MANAGED(dev_mat_temp_layers[i][j], DATATYPE, TRAINING_SIZE * getMaximumNumberofUnitsofUnifiedLayer(j)));
 			}
 			
 			// pre-allocate dev_ct_beta by logest weights and biases vector
@@ -238,11 +240,25 @@ public:
 		//#pragma omp parallel for	// parallel tasking
 		for (uint32_t i = 0; i < population_size; ++i) {
 			population[i].skill_factor = i % TASK_SIZE;
-			population[i].evalObj(TRAINING_SIZE, OUTPUT_SIZE, training_input_data_ptr, training_output_data_ptr,
+			population[i].evalObj(mfea_batch_training_size, OUTPUT_SIZE, training_input_data_ptr, training_output_data_ptr,
 						dev_mat_temp_rnvec[THREAD_IDX_CURRENT], dev_mat_temp_w[THREAD_IDX_CURRENT],
 						dev_mat_ones[THREAD_IDX_CURRENT], dev_mat_temp_layers[THREAD_IDX_CURRENT],
 						cublas_handle, cudnn_handle);
 		}
+
+	}
+
+	uint32_t nextBatch(uint32_t current_batch_idx) {
+		uint32_t next_batch_idx = 0;
+		if (current_batch_idx < TRAINING_SIZE - mfea_batch_training_size) {
+			next_batch_idx = current_batch_idx + mfea_batch_training_size - mfea_batch_overlap_size;
+			if (next_batch_idx > TRAINING_SIZE - mfea_batch_training_size) {
+				next_batch_idx = TRAINING_SIZE - mfea_batch_training_size;
+			}
+		} else {
+			next_batch_idx = 0;
+		}
+		return next_batch_idx;
 	}
 	
 
@@ -250,9 +266,12 @@ public:
 	void evolution() {
 		uint32_t generation = 0;
 		uint32_t count = 0;
-		
+		uint32_t batch_idx = 0;
+
 		while (++generation <= generation_size) {
 			std::cout << "generation " << generation << std::endl;
+
+
 			
 			// random shuffle before crossing over
 			std::random_shuffle(population.begin(), population.begin() + population_size);
@@ -291,12 +310,18 @@ public:
 				count += 2;
 			}
 
-
+			if (generation % 1000 == 0) {
+				batch_idx = nextBatch(batch_idx);
+				std::cout << "Processing next batch " << batch_idx << std::endl;
+				cudaDeviceSynchronize();
+				visualizeImage<DATATYPE>(training_input_data_ptr + batch_idx * INPUT_SIZE,
+						nullptr, 0);
+			}
 			// evaluate factorial costs for children
 			for (uint32_t i = 0; i < population_size; ++i) {
-				population[population_size + i].evalObj(TRAINING_SIZE, OUTPUT_SIZE,
-														training_input_data_ptr,
-														training_output_data_ptr,
+				population[population_size + i].evalObj(mfea_batch_training_size, OUTPUT_SIZE,
+														training_input_data_ptr + batch_idx * INPUT_SIZE,
+														training_output_data_ptr + batch_idx * OUTPUT_SIZE,
 														dev_mat_temp_rnvec[THREAD_IDX_CURRENT],
 														dev_mat_temp_w[THREAD_IDX_CURRENT],
 														dev_mat_ones[THREAD_IDX_CURRENT],

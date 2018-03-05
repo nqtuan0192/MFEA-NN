@@ -100,7 +100,7 @@ template<typename TYPE> void visualizeImage(TYPE* image_data, uint8_t* label_dat
 	}
 	
 	// print label
-	std::cout << "Label = " << label_data[index] + 0 << std::endl;
+	/*std::cout << "Label = " << label_data[index] + 0 << std::endl;
 	
 	// print code if provided
 	if (label_code_data != nullptr) {
@@ -122,7 +122,7 @@ template<typename TYPE> void visualizeImage(TYPE* image_data, uint8_t* label_dat
 			std::cout << predicted_label_code[index * OUTPUT_SIZE + i] << ", ";
 		}
 		std::cout << "] label = " << max_index << std::endl;
-	}
+	}*/
 }
 
 // training_indicator = true : load training files
