@@ -129,6 +129,7 @@ private:
 	DATATYPE mf_mutationratio = 1 / getTotalLayerWeightsandBiases();				// mutation factor, 
 	uint32_t mfea_batch_training_size = 100;	// subsample data size
 	uint32_t mfea_batch_overlap_size = 0;	// subsample data overlap size
+	uint32_t mfea_generation_per_batch = 100;
 	
 	
 	// logging
@@ -310,7 +311,7 @@ public:
 				count += 2;
 			}
 
-			if (generation % 1000 == 0) {
+			if (generation % mfea_generation_per_batch == 0) {
 				batch_idx = nextBatch(batch_idx);
 				std::cout << "Processing next batch " << batch_idx << std::endl;
 				cudaDeviceSynchronize();
