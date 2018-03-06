@@ -9,6 +9,7 @@
 #include <cmath>
 #include <limits>
 #include <array>
+#include <chrono>
 
 #include <cuda.h>
 #include <curand.h>
@@ -127,8 +128,25 @@ int main(int argc, char** argv) {
 		}
 		
 		doRandomShuffle<DATATYPE>(training_input_data, training_input_data, TRAINING_SIZE, INPUT_SIZE, OUTPUT_SIZE);
+		
+		// measure time code
+		std::chrono::time_point<std::chrono::system_clock> start, end;
+		std::chrono::duration<double> elapsed_seconds;
+		std::time_t end_time;
+
+		start = std::chrono::system_clock::now();
+		
+
 		mfea.initialize();	// does not cause page fault
 		mfea.evolution();	// does not cause page fault
+
+		// measure time code
+		end = std::chrono::system_clock::now();
+		elapsed_seconds = end - start;
+		end_time = std::chrono::system_clock::to_time_t(end);
+		std::cout << "finished computation at " << std::ctime(&end_time)
+		          << "elapsed time: " << elapsed_seconds.count() << "s\n";
+
 		mfea.sumariseResults();
 		mfea.writeSumaryResults();
 		mfea.reEvaluateTheFinalPopulation();
