@@ -587,6 +587,30 @@ template<typename TYPE> struct __functor_evalAccuracy {
 		return (thrust::get<0>(tup) - 0.5) * (thrust::get<1>(tup) - 0.5) > 0;
 	}
 };
+
+template<typename TYPE> TYPE evalAccuracy(size_t nrow, size_t ncol, TYPE* Y, TYPE* Ybar) {
+	uint32_t count = 0;
+	uint32_t max_index_Y = 0, max_index_Ybar = 0;
+	//#pragma unroll
+	for (uint32_t i = 0; i < nrow; ++i) {
+		max_index_Y = 0;
+		max_index_Ybar = 0;
+		//#pragma unroll
+		for (uint32_t j = 1; j < ncol; ++j) {
+			if (Y[i * ncol + j] > Y[i * ncol + max_index_Y]) {
+				max_index_Y = j;
+			}
+			if (Ybar[i * ncol + j] > Ybar[i * ncol + max_index_Ybar]) {
+				max_index_Ybar = j;
+			}
+		}
+		if (max_index_Y == max_index_Ybar) {
+			++count;
+		}
+	}
+	return float(count) / nrow;
+}
+
 template<typename TYPE> TYPE cuda_evalAccuracy(size_t nrow, size_t ncol, TYPE* Y, TYPE* Ybar) {
 	auto begin = thrust::make_zip_iterator(thrust::make_tuple(Y, Ybar));
 	auto end = thrust::make_zip_iterator(thrust::make_tuple(Y + nrow * ncol, Ybar + nrow * ncol));
