@@ -39,6 +39,37 @@ DATATYPE* training_output_data;
 DATATYPE* testing_input_data;
 DATATYPE* testing_output_data;
 
+template<typename TYPE> void doRandomShuffle(TYPE* input_data_ptr, TYPE* output_data_ptr, size_t numberof_samples, size_t numberof_elems_per_inputrow, size_t numberof_elems_per_outputrow) {
+	TYPE* temp_ptr;
+	cudaCALL(CUDA_M_MALLOC_MANAGED(temp_ptr, DATATYPE, numberof_elems_per_inputrow > numberof_elems_per_outputrow ? numberof_elems_per_inputrow : numberof_elems_per_outputrow));
+	
+	std::random_device datahelper_random_device;
+	std::mt19937 datahelper_mt_engine(datahelper_random_device());
+	std::uniform_int_distribution<> ui_dist(0, numberof_samples);
+	for (uint32_t i = 0; i < numberof_samples; ++i) {
+		uint32_t j = ui_dist(datahelper_mt_engine);
+		std::cout << "swap " << i << " and " << j << std::endl;
+		
+		// swap input
+		// copy i => temp
+		cudaCALL(cudaMemcpy(temp_ptr, input_data_ptr + i * numberof_elems_per_inputrow, numberof_elems_per_inputrow * sizeof(DATATYPE), cudaMemcpyDeviceToDevice));
+		// copy j => i
+		cudaCALL(cudaMemcpy(input_data_ptr + i * numberof_elems_per_inputrow, input_data_ptr + j * numberof_elems_per_inputrow, numberof_elems_per_inputrow * sizeof(DATATYPE), cudaMemcpyDeviceToDevice));
+		// copy temp => j
+		cudaCALL(cudaMemcpy(input_data_ptr + j * numberof_elems_per_inputrow, temp_ptr, numberof_elems_per_inputrow * sizeof(DATATYPE), cudaMemcpyDeviceToDevice));
+		
+		
+		// swap output
+		// copy i => temp
+		cudaCALL(cudaMemcpy(temp_ptr, output_data_ptr + i * numberof_elems_per_outputrow, numberof_elems_per_outputrow * sizeof(DATATYPE), cudaMemcpyDeviceToDevice));
+		// copy j => i
+		cudaCALL(cudaMemcpy(output_data_ptr + i * numberof_elems_per_outputrow, output_data_ptr + j * numberof_elems_per_outputrow, numberof_elems_per_outputrow * sizeof(DATATYPE), cudaMemcpyDeviceToDevice));
+		// copy temp => j
+		cudaCALL(cudaMemcpy(output_data_ptr + j * numberof_elems_per_outputrow, temp_ptr, numberof_elems_per_outputrow * sizeof(DATATYPE), cudaMemcpyDeviceToDevice));
+	}
+	cudaCALL(cudaFree(temp_ptr));
+}
+
 
 void showMUltitasksSetting() {
 	std::cout << "Multitasks setting:" << std::endl;;
@@ -95,6 +126,7 @@ int main(int argc, char** argv) {
 			return EXIT_FAILURE;
 		}
 		
+		doRandomShuffle<DATATYPE>(training_input_data, training_input_data, TRAINING_SIZE, INPUT_SIZE, OUTPUT_SIZE);
 		mfea.initialize();	// does not cause page fault
 		mfea.evolution();	// does not cause page fault
 		mfea.sumariseResults();
